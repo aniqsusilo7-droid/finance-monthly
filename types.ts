@@ -1,0 +1,77 @@
+export interface SalaryData {
+  basicSalary: number;
+  housingAllowance: number;
+  shiftAllowance: number;
+  overtimeHours: number;
+  bonusMultiplier: number; // For annual bonus calculation
+  thr: number;
+  leavePay: number; // Uang cuti
+  taxRate: number; // Percentage
+  otherDeductions: number;
+}
+
+export interface BudgetItem {
+  id: string;
+  name: string;
+  budget: number;
+  actual: number;
+}
+
+export interface OtherBudgetItem {
+  id: string;
+  name: string;
+  actual: number;
+}
+
+export interface BudgetCategory {
+  items: BudgetItem[];
+}
+
+export interface OtherBudgetCategory {
+  allocation: number;
+  items: OtherBudgetItem[];
+}
+
+export interface BudgetData {
+  needs: BudgetCategory;
+  savings: BudgetCategory;
+  debt: BudgetCategory;
+  others: OtherBudgetCategory;
+}
+
+export interface InvestmentItem {
+  id: string;
+  name: string;
+  currentValue: number;
+  targetValue: number;
+}
+
+export interface MonthlyData {
+  salary: SalaryData;
+  budget: BudgetData;
+  investments: InvestmentItem[];
+}
+
+// Global state map: key is "YYYY-MM"
+export interface AppState {
+  [key: string]: MonthlyData;
+}
+
+export const DEFAULT_SALARY: SalaryData = {
+  basicSalary: 0,
+  housingAllowance: 0,
+  shiftAllowance: 0,
+  overtimeHours: 0,
+  bonusMultiplier: 0,
+  thr: 0,
+  leavePay: 0,
+  taxRate: 0,
+  otherDeductions: 0,
+};
+
+export const DEFAULT_BUDGET: BudgetData = {
+  needs: { items: [] },
+  savings: { items: [] },
+  debt: { items: [] },
+  others: { allocation: 0, items: [] },
+};
