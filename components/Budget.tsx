@@ -56,38 +56,46 @@ const CategorySection: React.FC<CategorySectionProps> = ({
   return (
     <div className={`glass-panel rounded-2xl overflow-hidden mb-4 sm:mb-5 transition-all duration-300 hover:shadow-lg`}>
       <div 
-        className="p-4 sm:p-5 flex justify-between items-center cursor-pointer hover:bg-slate-50/50 transition-colors"
+        className="p-4 sm:p-5 flex justify-between items-start sm:items-center cursor-pointer hover:bg-slate-50/50 transition-colors gap-2"
         onClick={() => setExpanded(!expanded)}
       >
-        <div className="flex items-center gap-3 sm:gap-4">
-           <div className={`p-2.5 sm:p-3 rounded-xl ${getIconColor()}`}>
+        <div className="flex items-start gap-3 sm:gap-4 flex-1">
+           <div className={`p-2.5 sm:p-3 rounded-xl mt-0.5 sm:mt-0 ${getIconColor()}`}>
               {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
            </div>
            <div className="flex-1 min-w-0">
-             <h4 className="font-bold text-base sm:text-lg text-slate-800 tracking-tight truncate">{title}</h4>
-             <div className="text-xs text-slate-500 flex flex-col sm:flex-row sm:gap-3 mt-0.5 sm:mt-1 font-medium">
-               <div className="flex items-center gap-2">
-                 <span>{items.length} Item</span>
+             <div className="flex items-center gap-2">
+                 <h4 className="font-bold text-base sm:text-lg text-slate-800 tracking-tight truncate">{title}</h4>
                  {unrealizedCount > 0 && (
-                   <span className="text-amber-500 font-medium flex items-center gap-1 bg-amber-50 px-1.5 rounded-full text-[10px] border border-amber-100">
+                   <span className="text-amber-500 font-medium flex items-center gap-1 bg-amber-50 px-1.5 py-0.5 rounded-md text-[10px] border border-amber-100">
                      <Info size={8} /> {unrealizedCount}
                    </span>
                  )}
-               </div>
-               <div className="hidden sm:block">
-                  <span>Alloc: <span className="text-slate-700">{formatRupiah(catTotalAllocated)}</span></span>
-                  <span className="mx-2">•</span>
-                  <span>Act: <span className="text-slate-700">{formatRupiah(catTotalActual)}</span></span>
-               </div>
+             </div>
+             
+             {/* Detailed Stats Row matching screenshot style */}
+             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500">
+                <div className="flex items-center gap-1">
+                    <span>Alokasi:</span>
+                    <span className="text-slate-700">{formatRupiah(catTotalAllocated)}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                    <span>Realisasi:</span>
+                    <span className={`text-slate-700 ${isCatOver ? 'text-rose-500' : ''}`}>{formatRupiah(catTotalActual)}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                    <span>Sisa:</span>
+                    <span className={`${catRemaining < 0 ? 'text-rose-500' : 'text-emerald-600'}`}>{formatRupiah(catRemaining)}</span>
+                </div>
              </div>
            </div>
         </div>
-        <div className="text-right pl-2">
-           <div className="text-[10px] sm:text-xs text-slate-400 uppercase font-semibold">Sisa</div>
-           <div className={`text-base sm:text-lg font-bold ${isCatOver ? 'text-rose-500' : 'text-emerald-600'}`}>
-             {formatRupiah(catRemaining)}
+        
+        {/* Progress Percentage Badge (Replaces old Sisa block on mobile, keeps clean look) */}
+        <div className="pl-2">
+           <div className={`text-xs font-bold px-2 py-1 rounded-lg ${isCatOver ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
+              {catTotalAllocated > 0 ? ((catTotalActual / catTotalAllocated) * 100).toFixed(0) : 0}%
            </div>
-           {isCatOver && <span className="text-[9px] sm:text-[10px] text-rose-600 flex items-center justify-end gap-1 bg-rose-50 px-2 py-0.5 rounded mt-1 font-medium"><AlertTriangle size={8}/> Over</span>}
         </div>
       </div>
 
@@ -192,33 +200,46 @@ const OthersCategory: React.FC<OthersCategoryProps> = ({
   return (
     <div className="glass-panel rounded-2xl overflow-hidden mb-5 transition-all duration-300 hover:shadow-lg">
       <div 
-        className="p-4 sm:p-5 flex justify-between items-center cursor-pointer hover:bg-slate-50/50 transition-colors"
+        className="p-4 sm:p-5 flex justify-between items-start sm:items-center cursor-pointer hover:bg-slate-50/50 transition-colors gap-2"
         onClick={() => setExpanded(!expanded)}
       >
-        <div className="flex items-center gap-3 sm:gap-4">
-           <div className="p-2.5 sm:p-3 rounded-xl bg-violet-50 text-violet-600">
+        <div className="flex items-start gap-3 sm:gap-4 flex-1">
+           <div className="p-2.5 sm:p-3 rounded-xl mt-0.5 sm:mt-0 bg-violet-50 text-violet-600">
               {expanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
            </div>
            <div className="flex-1 min-w-0">
-             <h4 className="font-bold text-base sm:text-lg text-slate-800 tracking-tight truncate">Lain-lain</h4>
-             <div className="text-xs text-slate-500 flex flex-col sm:flex-row sm:gap-3 mt-0.5 sm:mt-1 font-medium">
-                <div className="flex items-center gap-2">
-                 <span>{items.length} Item</span>
+             <div className="flex items-center gap-2">
+                 <h4 className="font-bold text-base sm:text-lg text-slate-800 tracking-tight truncate">Lain-lain</h4>
                  {unrealizedCount > 0 && (
-                   <span className="text-amber-500 font-medium flex items-center gap-1 bg-amber-50 px-1.5 rounded-full text-[10px] border border-amber-100">
+                   <span className="text-amber-500 font-medium flex items-center gap-1 bg-amber-50 px-1.5 py-0.5 rounded-md text-[10px] border border-amber-100">
                      <Info size={8} /> {unrealizedCount}
                    </span>
                  )}
-               </div>
+             </div>
+
+             {/* Detailed Stats Row */}
+             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider text-slate-500">
+                <div className="flex items-center gap-1">
+                    <span>Alokasi:</span>
+                    <span className="text-slate-700">{formatRupiah(allocation)}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                    <span>Realisasi:</span>
+                    <span className={`text-slate-700 ${isCatOver ? 'text-rose-500' : ''}`}>{formatRupiah(catTotalActual)}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                    <span>Sisa:</span>
+                    <span className={`${catRemaining < 0 ? 'text-rose-500' : 'text-emerald-600'}`}>{formatRupiah(catRemaining)}</span>
+                </div>
              </div>
            </div>
         </div>
-        <div className="text-right pl-2">
-           <div className="text-[10px] sm:text-xs text-slate-400 uppercase font-semibold">Sisa</div>
-           <div className={`text-base sm:text-lg font-bold ${isCatOver ? 'text-rose-500' : 'text-emerald-600'}`}>
-             {formatRupiah(catRemaining)}
+
+        {/* Progress Percentage Badge */}
+        <div className="pl-2">
+           <div className={`text-xs font-bold px-2 py-1 rounded-lg ${isCatOver ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
+              {allocation > 0 ? ((catTotalActual / allocation) * 100).toFixed(0) : 0}%
            </div>
-           {isCatOver && <span className="text-[9px] sm:text-[10px] text-rose-600 flex items-center justify-end gap-1 bg-rose-50 px-2 py-0.5 rounded mt-1 font-medium"><AlertTriangle size={8}/> Over</span>}
         </div>
       </div>
 

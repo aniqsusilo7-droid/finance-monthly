@@ -61,6 +61,9 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => 
               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }}></div>
               <span className="text-slate-500 text-[10px] sm:text-xs">{entry.name}:</span>
               <span className="text-slate-800 font-mono text-[10px] sm:text-xs font-bold">{formatRupiah(entry.value)}</span>
+              <span className="text-slate-400 text-[10px] ml-1">
+                ({(entry.value / (entry.payload.payload?.total || (entry.dataKey === 'value' ? payload.reduce((a:any,b:any)=>a+b.value,0) : 1)) * 100).toFixed(0)}%)
+              </span>
             </div>
           ))}
         </div>
@@ -109,7 +112,8 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => 
                     innerRadius={50}
                     outerRadius={80}
                     dataKey="value"
-                    labelLine={false}
+                    labelLine={true}
+                    label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                     paddingAngle={5}
                     stroke="none"
                   >
@@ -137,7 +141,8 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => 
                     innerRadius={50}
                     outerRadius={80}
                     dataKey="value"
-                    labelLine={false}
+                    labelLine={true}
+                    label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
                     paddingAngle={5}
                     stroke="none"
                   >
