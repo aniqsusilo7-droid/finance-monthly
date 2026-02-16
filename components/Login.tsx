@@ -73,10 +73,11 @@ const Login: React.FC<LoginProps> = ({ onAuthenticated }) => {
             <div className="inline-flex p-3 sm:p-4 rounded-2xl sm:rounded-3xl bg-indigo-600 shadow-xl mb-4 sm:mb-6 shadow-indigo-900/40">
               <ShieldCheck className="text-white w-6 h-6 sm:w-8 sm:h-8" />
             </div>
-            {/* Judul diselaraskan dengan Dashboard */}
+            {/* Judul diselaraskan dengan Dashboard sesuai instruksi */}
             <div className="space-y-1">
-              <h1 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight leading-tight">ANIQ SUSILO</h1>
-              <p className="text-[10px] sm:text-xs font-black text-indigo-400 uppercase tracking-[0.3em]">FINANCE MONTHLY</p>
+              <h1 className="text-lg sm:text-2xl font-black text-white uppercase tracking-tighter leading-tight">
+                ANIQ SUSILO - FINANCE MONTHLY
+              </h1>
             </div>
             <div className="mt-4 pt-4 border-t border-white/5">
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">

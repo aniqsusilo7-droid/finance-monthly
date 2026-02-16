@@ -50,13 +50,10 @@ const App: React.FC = () => {
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   
   const handleLogout = () => {
-    // Hapus sesi dari storage
     localStorage.removeItem('is_authenticated');
-    // Reset semua state aplikasi untuk keamanan data di memori
     setAppState({});
     setActiveTab('salary');
     setCurrentDate(new Date());
-    // Trigger perubahan view ke Login tanpa reload halaman (menghindari error link rusak)
     setIsAuthenticated(false);
   };
 
@@ -152,7 +149,7 @@ const App: React.FC = () => {
       <nav className="sticky top-0 z-50 pt-1 sm:pt-4 px-1 sm:px-6">
         <div className="max-w-7xl mx-auto glass-panel rounded-xl sm:rounded-2xl shadow-xl border border-white/5 overflow-hidden">
           <div className="flex items-center justify-between p-2 sm:px-6 sm:h-20 gap-2">
-            <div className="flex items-center gap-2 sm:gap-3 text-left">
+            <div className="flex items-center gap-2 sm:gap-3 text-left min-w-0 flex-1">
               <div className="bg-indigo-600 p-1.5 sm:p-2 rounded-lg shadow-lg shrink-0">
                  <Wallet className="text-white h-4 w-4 sm:h-6 sm:w-6" />
               </div>
@@ -163,8 +160,8 @@ const App: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
-                {/* Save Status */}
-                <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                {/* Save Status - Icon Only on Mobile */}
+                <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-slate-800/50 rounded-lg border border-slate-700/50">
                   {saveStatus === 'saving' ? (
                     <Loader2 size={12} className="animate-spin text-indigo-400" />
                   ) : saveStatus === 'saved' ? (
@@ -172,31 +169,30 @@ const App: React.FC = () => {
                   ) : (
                     <Cloud size={10} className="text-slate-500"/>
                   )}
-                  <span className="hidden sm:inline text-[8px] font-black uppercase text-slate-400 tracking-tighter">
-                    {saveStatus === 'saving' ? 'Syncing' : saveStatus === 'saved' ? 'Cloud Safe' : 'Connected'}
+                  <span className="text-[8px] font-black uppercase text-slate-400 tracking-tighter">
+                    {saveStatus === 'saving' ? 'Syncing' : saveStatus === 'saved' ? 'Saved' : 'Online'}
                   </span>
                 </div>
 
                 {/* Month Navigator */}
                 <div className="flex items-center bg-slate-800/80 rounded-lg sm:rounded-xl p-1 border border-slate-700 shadow-sm">
                   <button onClick={() => changeMonth(-1)} className="p-1 sm:p-2 hover:bg-slate-700 rounded-lg text-slate-400"><ChevronLeft size={14} className="sm:size-5" /></button>
-                  <div className="px-2 sm:px-6 font-mono font-black text-indigo-400 text-[9px] sm:text-sm uppercase tracking-wider text-center min-w-[60px] sm:min-w-[120px]">
+                  <div className="px-1.5 sm:px-4 font-mono font-black text-indigo-400 text-[9px] sm:text-sm uppercase tracking-wider text-center min-w-[50px] sm:min-w-[100px]">
                     {currentDate.toLocaleString('id-ID', { month: 'short', year: '2-digit' }).toUpperCase()}
                   </div>
                   <button onClick={() => changeMonth(1)} className="p-1 sm:p-2 hover:bg-slate-700 rounded-lg text-slate-400"><ChevronRight size={14} className="sm:size-5" /></button>
                 </div>
 
-                {/* Actions */}
                 <div className="flex items-center gap-1">
                   <button 
                     onClick={toggleTheme}
-                    className="p-2 sm:px-4 sm:py-2 bg-slate-800/80 rounded-lg sm:rounded-xl border border-slate-700 transition-colors"
+                    className="p-1.5 sm:px-3 sm:py-2 bg-slate-800/80 rounded-lg border border-slate-700 transition-colors"
                   >
                     {theme === 'dark' ? <Sun size={14} className="text-amber-400 sm:size-5" /> : <Moon size={14} className="text-indigo-400 sm:size-5" />}
                   </button>
                   <button 
                     onClick={handleLogout}
-                    className="p-2 sm:px-4 sm:py-2 bg-rose-500/10 rounded-lg sm:rounded-xl border border-rose-500/20 shadow-sm hover:bg-rose-500/20 transition-all text-rose-500"
+                    className="p-1.5 sm:px-3 sm:py-2 bg-rose-500/10 rounded-lg border border-rose-500/20 text-rose-500"
                   >
                     <LogOut size={14} className="sm:size-5" />
                   </button>
