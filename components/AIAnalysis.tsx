@@ -1,0 +1,142 @@
+import React, { useState } from 'react';
+import { GoogleGenAI } from "@google/genai";
+import { MonthlyData } from '../types';
+import { formatRupiah } from '../utils';
+import { Sparkles, BrainCircuit, RefreshCw, TrendingUp, AlertCircle, CheckCircle2 } from 'lucide-react';
+
+interface AIAnalysisProps {
+  currentMonthData: MonthlyData;
+  netIncome: number;
+}
+
+const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) => {
+  const [analysis, setAnalysis] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const generateAnalysis = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      
+      const budgetDetails = JSON.stringify({
+        income: formatRupiah(netIncome),
+        needs: currentMonthData.budget.needs?.items.map(i => ({ name: i.name, budget: i.budget, actual: i.actual })),
+        savings: currentMonthData.budget.savings?.items.map(i => ({ name: i.name, budget: i.budget, actual: i.actual })),
+        debt: currentMonthData.budget.debt?.items.map(i => ({ name: i.name, budget: i.budget, actual: i.actual })),
+        others: currentMonthData.budget.others?.items.map(i => ({ name: i.name, actual: i.actual })),
+        investments: currentMonthData.investments.map(i => ({ name: i.name, value: i.currentValue, target: i.targetValue }))
+      });
+
+      const prompt = `Bertindaklah sebagai Konsultan Keuangan Pribadi Profesional. Analisis data keuangan berikut untuk bulan ini dan berikan wawasan mendalam dalam Bahasa Indonesia.
+      
+      Data Keuangan:
+      ${budgetDetails}
+      
+      Format respon Anda harus meliputi:
+      1. Ringkasan Singkat Kesehatan Keuangan (Gunakan nada yang menyemangati).
+      2. Analisis Efisiensi Anggaran (Soroti area yang hemat atau overbudget).
+      3. Analisis Aset & Investasi (Seberapa dekat dengan target).
+      4. 3 Saran Praktis untuk bulan depan agar kondisi keuangan Aniq Susilo semakin kuat.
+      
+      Berikan respon dalam format Markdown yang rapi dengan heading dan poin-poin. Jangan gunakan teknis yang terlalu rumit, buatlah mudah dipahami dan berorientasi pada tindakan.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3-flash-preview',
+        contents: prompt,
+      });
+
+      setAnalysis(response.text || "Maaf, AI gagal memberikan respon.");
+    } catch (err) {
+      console.error("AI Analysis Error:", err);
+      setError("Gagal menghubungkan ke server AI. Pastikan Anda memiliki koneksi internet yang stabil.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-6 animate-fadeIn pb-12">
+      <div className="glass-panel p-6 sm:p-10 rounded-[2.5rem] border border-indigo-500/20 shadow-2xl relative overflow-hidden group">
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-indigo-600/10 rounded-full blur-3xl group-hover:bg-indigo-600/20 transition-all"></div>
+        
+        <div className="relative z-10 flex flex-col items-center text-center">
+          <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-4 rounded-3xl shadow-xl mb-6">
+            <BrainCircuit className="text-white w-8 h-8 sm:w-12 sm:h-12" />
+          </div>
+          <h2 className="text-2xl sm:text-4xl font-black text-white uppercase tracking-tighter mb-4">Financial AI Intelligence</h2>
+          <p className="text-slate-400 max-w-lg font-bold text-sm sm:text-base leading-relaxed mb-8">
+            Dapatkan analisis cerdas dan rekomendasi strategis berdasarkan data keuangan Anda bulan ini menggunakan teknologi AI terbaru.
+          </p>
+          
+          <button 
+            onClick={generateAnalysis}
+            disabled={isLoading}
+            className={`flex items-center gap-3 px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-900/40 disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            {isLoading ? (
+              <>
+                <RefreshCw className="w-5 h-5 animate-spin" />
+                Menganalisis...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-5 h-5" />
+                Mulai Analisis AI
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div className="glass-panel p-6 rounded-2xl border-l-4 border-rose-500 flex items-center gap-4 bg-rose-500/5">
+          <AlertCircle className="text-rose-500 shrink-0" size={24} />
+          <p className="text-rose-200 text-sm font-black">{error}</p>
+        </div>
+      )}
+
+      {analysis && !isLoading && (
+        <div className="glass-panel p-6 sm:p-10 rounded-[2.5rem] border border-white/5 shadow-xl animate-fadeIn">
+          <div className="flex items-center gap-3 mb-8 border-b border-white/5 pb-4">
+            <div className="w-1.5 h-6 bg-emerald-500 rounded-full"></div>
+            <h3 className="text-lg font-black text-white uppercase tracking-widest">Laporan Analisis Cerdas</h3>
+          </div>
+          <div className="prose prose-invert max-w-none">
+            <div className="text-slate-300 leading-relaxed font-medium space-y-4 whitespace-pre-wrap">
+              {analysis.split('\n').map((line, i) => {
+                if (line.startsWith('#')) {
+                  return <h3 key={i} className="text-xl font-black text-indigo-400 mt-6 mb-3 uppercase border-l-2 border-indigo-500 pl-3">{line.replace(/#/g, '').trim()}</h3>;
+                }
+                if (line.trim().startsWith('-') || line.trim().startsWith('*')) {
+                  return (
+                    <div key={i} className="flex gap-3 items-start ml-2 mb-2">
+                      <div className="mt-1.5 bg-indigo-500/30 rounded-full p-0.5">
+                        <CheckCircle2 size={12} className="text-indigo-400" />
+                      </div>
+                      <span className="text-slate-200 font-bold">{line.replace(/[-*]/, '').trim()}</span>
+                    </div>
+                  );
+                }
+                return <p key={i} className="mb-2 font-bold">{line}</p>;
+              })}
+            </div>
+          </div>
+          
+          <div className="mt-12 pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2 text-[10px] font-black uppercase text-slate-500 tracking-widest">
+              <TrendingUp size={14} className="text-indigo-500" />
+              Dianalisis secara real-time oleh Gemini Flash
+            </div>
+            <button onClick={generateAnalysis} className="text-xs font-black uppercase tracking-widest text-indigo-400 hover:text-white transition-colors flex items-center gap-2">
+              <RefreshCw size={14} /> Refresh Analisis
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AIAnalysis;

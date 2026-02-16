@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
   <head>
@@ -27,6 +28,15 @@
        /* Animation Utilities */
        .animate-fadeIn {
          animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+       }
+
+       .animate-bounce-slow {
+         animation: bounce-slow 3s infinite;
+       }
+
+       @keyframes bounce-slow {
+         0%, 100% { transform: translateY(0); }
+         50% { transform: translateY(-10px); }
        }
 
        .glass-panel {
@@ -65,7 +75,8 @@
     "react/": "https://esm.sh/react@^19.2.4/",
     "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
     "recharts": "https://esm.sh/recharts@^3.7.0",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2"
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+    "@google/genai": "https://esm.sh/@google/genai@^1.41.0"
   }
 }
 </script>

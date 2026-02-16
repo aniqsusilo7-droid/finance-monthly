@@ -4,7 +4,7 @@ import { BudgetData, BudgetItem } from '../types';
 import CurrencyInput from './ui/CurrencyInput';
 import DeleteModal from './ui/DeleteModal';
 import { formatRupiah } from '../utils';
-import { ChevronDown, ChevronUp, Plus, Trash2, FolderPlus, X, Check, AlertTriangle, Pencil } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Trash2, FolderPlus, X, Check, AlertTriangle, Pencil, BellRing, OctagonAlert } from 'lucide-react';
 
 interface BudgetProps {
   income: number;
@@ -44,6 +44,8 @@ const CategorySection: React.FC<CategorySectionProps> = ({
   const catTotalAllocated = items?.reduce((a, b) => a + (b.budget || 0), 0) || 0;
   const catTotalActual = items?.reduce((a, b) => a + (b.actual || 0), 0) || 0;
   const isCatOver = catTotalActual > catTotalAllocated;
+  const catRemaining = catTotalAllocated - catTotalActual;
+  const catProgress = catTotalAllocated > 0 ? (catTotalActual / catTotalAllocated) * 100 : 0;
   
   const filledCount = items?.filter(item => (item.actual || 0) > 0).length || 0;
   const totalCount = items?.length || 0;
@@ -60,7 +62,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({
 
   return (
     <div 
-      className={`glass-panel rounded-[2rem] overflow-hidden mb-6 transition-all duration-500 ${isCatOver ? 'ring-2 ring-rose-500 shadow-[0_0_30px_rgba(244,63,94,0.2)]' : 'hover:shadow-2xl hover:border-white/20'}`}
+      className={`glass-panel rounded-[2rem] overflow-hidden mb-6 transition-all duration-500 ${isCatOver ? 'ring-2 ring-rose-500 shadow-[0_0_30px_rgba(244,63,94,0.3)]' : 'hover:shadow-2xl hover:border-white/20'}`}
       style={{ borderLeft: `6px solid ${colorHex}` }}
     >
       <div className="flex items-stretch border-b border-white/5">
@@ -68,7 +70,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({
           className="flex-1 p-5 sm:p-6 flex items-center gap-4 sm:gap-5 cursor-pointer hover:bg-white/5 transition-colors"
           onClick={() => !isEditingTitle && setExpanded(!expanded)}
         >
-          <div className="p-3 rounded-2xl bg-slate-900 shadow-inner shrink-0" style={{ color: colorHex }}>
+          <div className="p-3 rounded-2xl bg-slate-900 shadow-inner shrink-0" style={{ color: isCatOver ? '#F43F5E' : colorHex }}>
             {expanded ? <ChevronUp size={20} className="sm:w-6 sm:h-6" /> : <ChevronDown size={20} className="sm:w-6 sm:h-6" />}
           </div>
           <div className="flex-1 min-w-0">
@@ -97,18 +99,25 @@ const CategorySection: React.FC<CategorySectionProps> = ({
                     )}
                   </div>
                 )}
-                <div className="flex items-center gap-2">
-                   <span className="text-[9px] sm:text-[10px] font-black text-slate-400 bg-slate-900 px-2 sm:px-3 py-1 rounded-full border border-slate-700 whitespace-nowrap">{filledCount}/{totalCount} TERISI</span>
-                   {isIncomplete && (
-                     <span className="flex items-center gap-1 text-[8px] sm:text-[9px] font-black text-amber-400 bg-amber-400/10 px-2 py-1 rounded-full border border-amber-400/20 animate-pulse whitespace-nowrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                   <span className="text-[9px] sm:text-[10px] font-black text-slate-400 bg-slate-900 px-2 sm:px-3 py-1 rounded-full border border-slate-700 whitespace-nowrap uppercase">{filledCount}/{totalCount} TERISI</span>
+                   {isCatOver && (
+                     <span className="flex items-center gap-1 text-[8px] sm:text-[9px] font-black text-white bg-rose-600 px-2.5 py-1 rounded-full border border-rose-400/50 animate-pulse whitespace-nowrap shadow-[0_0_15px_rgba(244,63,94,0.5)]">
+                        <BellRing size={10} /> ALARM OVERBUDGET
+                     </span>
+                   )}
+                   {isIncomplete && !isCatOver && (
+                     <span className="flex items-center gap-1 text-[8px] sm:text-[9px] font-black text-amber-400 bg-amber-400/10 px-2 py-1 rounded-full border border-amber-400/20 whitespace-nowrap">
                         <AlertTriangle size={10} /> BELUM LENGKAP
                      </span>
                    )}
                 </div>
              </div>
-             <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500">
+             <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2.5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 border-t border-white/5 pt-2">
                 <span className="flex items-center gap-1.5">BUDGET: <span className="text-white">{formatRupiah(catTotalAllocated)}</span></span>
-                <span className="flex items-center gap-1.5">AKTUAL: <span className={isCatOver ? 'text-rose-400' : 'text-emerald-400'}>{formatRupiah(catTotalActual)}</span></span>
+                <span className="flex items-center gap-1.5">AKTUAL: <span className={isCatOver ? 'text-rose-400 font-black' : 'text-emerald-400'}>{formatRupiah(catTotalActual)}</span></span>
+                <span className="flex items-center gap-1.5 border-l border-white/10 pl-3">SISA: <span className={catRemaining < 0 ? 'text-rose-400' : 'text-emerald-400 font-black'}>{formatRupiah(catRemaining)}</span></span>
+                <span className="flex items-center gap-1.5 border-l border-white/10 pl-3">PROGRES: <span className={isCatOver ? 'text-rose-400' : 'text-indigo-400'}>{catProgress.toFixed(0)}%</span></span>
              </div>
           </div>
         </div>
@@ -132,29 +141,35 @@ const CategorySection: React.FC<CategorySectionProps> = ({
 
       {expanded && (
         <div className="p-4 sm:p-8 bg-slate-950/40 space-y-4 animate-fadeIn">
-           {(items || []).map((item) => (
-             <div key={item.id} className="grid grid-cols-2 md:grid-cols-12 gap-3 sm:gap-4 p-4 bg-slate-900/60 rounded-2xl border border-white/5 items-end">
-               <div className="col-span-2 md:col-span-5">
-                 <label className="text-[9px] uppercase font-black text-slate-500 block mb-2 tracking-widest">Detail Item</label>
-                 <input type="text" value={item.name} onChange={(e) => onUpdateItems(items.map(i => i.id === item.id ? {...i, name: e.target.value} : i))} className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white font-black outline-none focus:border-indigo-500 shadow-inner" placeholder="Nama item..." />
+           {(items || []).map((item) => {
+             const isItemOver = (item.actual || 0) > (item.budget || 0);
+             return (
+               <div key={item.id} className={`grid grid-cols-2 md:grid-cols-12 gap-3 sm:gap-4 p-4 bg-slate-900/60 rounded-2xl border ${isItemOver ? 'border-rose-500/30 bg-rose-900/5' : 'border-white/5'} items-end transition-all`}>
+                 <div className="col-span-2 md:col-span-5">
+                   <label className="text-[9px] uppercase font-black text-slate-500 block mb-2 tracking-widest">Detail Item</label>
+                   <input type="text" value={item.name} onChange={(e) => onUpdateItems(items.map(i => i.id === item.id ? {...i, name: e.target.value} : i))} className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white font-black outline-none focus:border-indigo-500 shadow-inner" placeholder="Nama item..." />
+                 </div>
+                 <div className="col-span-1 md:col-span-3">
+                   <CurrencyInput label="Budget" value={item.budget} onChange={(v) => onUpdateItems(items.map(i => i.id === item.id ? {...i, budget: v} : i))} />
+                 </div>
+                 <div className="col-span-1 md:col-span-3">
+                   <CurrencyInput label="Realisasi" value={item.actual} onChange={(v) => onUpdateItems(items.map(i => i.id === item.id ? {...i, actual: v} : i))} />
+                   <div className="flex justify-between mt-1 px-1">
+                      <span className="text-[8px] font-black uppercase text-slate-500">SISA: <span className={(item.budget-item.actual) < 0 ? 'text-rose-400' : 'text-slate-400'}>{formatRupiah(item.budget-item.actual)}</span></span>
+                   </div>
+                 </div>
+                 <div className="col-span-2 md:col-span-1 flex justify-end">
+                   <button 
+                      type="button" 
+                      onClick={() => onRequestDeleteItem(item.id, item.name)} 
+                      className="p-3 text-slate-600 hover:text-rose-500"
+                   >
+                     <Trash2 size={20} />
+                   </button>
+                 </div>
                </div>
-               <div className="col-span-1 md:col-span-3">
-                 <CurrencyInput label="Budget" value={item.budget} onChange={(v) => onUpdateItems(items.map(i => i.id === item.id ? {...i, budget: v} : i))} />
-               </div>
-               <div className="col-span-1 md:col-span-3">
-                 <CurrencyInput label="Realisasi" value={item.actual} onChange={(v) => onUpdateItems(items.map(i => i.id === item.id ? {...i, actual: v} : i))} />
-               </div>
-               <div className="col-span-2 md:col-span-1 flex justify-end">
-                 <button 
-                    type="button" 
-                    onClick={() => onRequestDeleteItem(item.id, item.name)} 
-                    className="p-3 text-slate-600 hover:text-rose-500"
-                 >
-                   <Trash2 size={20} />
-                 </button>
-               </div>
-             </div>
-           ))}
+             );
+           })}
            <button 
              type="button" 
              onClick={() => onUpdateItems([...(items || []), {id: Date.now().toString(), name: '', budget: 0, actual: 0}])} 
@@ -193,6 +208,25 @@ const Budget: React.FC<BudgetProps> = ({ income, data, onChange }) => {
                     (data.others?.items?.reduce((a,b)=>a+(b.actual||0),0)||0) + 
                     (data.custom?.reduce((a,c)=>a+c.items.reduce((ia,ii)=>ia+(ii.actual||0),0),0)||0);
 
+  // Global overbudget check
+  // Fix: changed parameter type to accept items with optional budget property to support both BudgetItem and OtherBudgetItem
+  const checkOver = (items: { actual: number; budget?: number }[] | undefined, limit?: number) => {
+    if (limit !== undefined) {
+      const act = items?.reduce((a, b) => a + (b.actual || 0), 0) || 0;
+      return act > limit;
+    }
+    const alloc = items?.reduce((a, b) => a + (b.budget || 0), 0) || 0;
+    const act = items?.reduce((a, b) => a + (b.actual || 0), 0) || 0;
+    return act > alloc;
+  };
+
+  const isAnyOver = 
+    checkOver(data.needs?.items) || 
+    checkOver(data.savings?.items) || 
+    checkOver(data.debt?.items) || 
+    checkOver(data.others?.items, data.others?.allocation) ||
+    (data.custom?.some(c => checkOver(c.items)) || false);
+
   const confirmDelete = () => {
     if (!deleteTarget) return;
     if (deleteTarget.type === 'category') {
@@ -219,6 +253,13 @@ const Budget: React.FC<BudgetProps> = ({ income, data, onChange }) => {
     setDeleteTarget(null);
   };
 
+  const handleRenameFixed = (key: 'needs' | 'savings' | 'debt', newName: string) => {
+    const section = data[key];
+    if (section) {
+      onChange({ ...data, [key]: { ...section, name: newName } });
+    }
+  };
+
   return (
     <div className="space-y-6 sm:space-y-8 pb-20 animate-fadeIn">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
@@ -240,6 +281,26 @@ const Budget: React.FC<BudgetProps> = ({ income, data, onChange }) => {
         </div>
       </div>
 
+      {/* GLOBAL OVERBUDGET ALARM BANNER */}
+      {isAnyOver && (
+        <div className="animate-bounce-slow mt-4">
+          <div className="bg-gradient-to-r from-rose-600 to-rose-800 p-4 sm:p-5 rounded-[1.5rem] border border-rose-400 shadow-[0_0_40px_rgba(244,63,94,0.4)] flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="bg-white/20 p-2 sm:p-3 rounded-xl">
+                <OctagonAlert className="text-white w-6 h-6 sm:w-8 sm:h-8" />
+              </div>
+              <div>
+                <h4 className="text-white text-xs sm:text-base font-black uppercase tracking-tight">Perhatian: Overbudget Terdeteksi!</h4>
+                <p className="text-rose-100 text-[9px] sm:text-[11px] font-bold uppercase tracking-widest">Ada kategori yang melampaui batas anggaran yang telah ditetapkan.</p>
+              </div>
+            </div>
+            <div className="hidden sm:block">
+               <BellRing className="text-white/40 animate-pulse" size={32} />
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-b border-white/5 pb-6">
          <h2 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tighter flex items-center gap-3">
             <div className="w-2 h-6 sm:h-8 bg-indigo-600 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div> 
@@ -259,11 +320,11 @@ const Budget: React.FC<BudgetProps> = ({ income, data, onChange }) => {
       </div>
 
       <div className="space-y-4">
-        {data.needs && <CategorySection title="Kebutuhan Pokok" items={data.needs.items} colorHex={CATEGORY_COLORS.needs} onRenameCategory={() => {}} onRequestDeleteCategory={() => setDeleteTarget({ type: 'category', id: 'needs', name: 'Kebutuhan Pokok', categoryKey: 'needs' })} onRequestDeleteItem={(id, name) => setDeleteTarget({ type: 'item', id, name, categoryKey: 'needs' })} onUpdateItems={i => onChange({ ...data, needs: { items: i } })} canDelete={false} canRename={false} />}
+        {data.needs && <CategorySection title={data.needs.name || "Kebutuhan Pokok"} items={data.needs.items} colorHex={CATEGORY_COLORS.needs} onRenameCategory={(val) => handleRenameFixed('needs', val)} onRequestDeleteCategory={() => setDeleteTarget({ type: 'category', id: 'needs', name: data.needs?.name || 'Kebutuhan Pokok', categoryKey: 'needs' })} onRequestDeleteItem={(id, name) => setDeleteTarget({ type: 'item', id, name, categoryKey: 'needs' })} onUpdateItems={i => onChange({ ...data, needs: { ...data.needs, items: i } })} canDelete={true} canRename={true} />}
         
-        {data.savings && <CategorySection title="Tabungan & Investasi" items={data.savings.items} colorHex={CATEGORY_COLORS.savings} onRenameCategory={() => {}} onRequestDeleteCategory={() => setDeleteTarget({ type: 'category', id: 'savings', name: 'Tabungan & Investasi', categoryKey: 'savings' })} onRequestDeleteItem={(id, name) => setDeleteTarget({ type: 'item', id, name, categoryKey: 'savings' })} onUpdateItems={i => onChange({ ...data, savings: { items: i } })} canDelete={false} canRename={false} />}
+        {data.savings && <CategorySection title={data.savings.name || "Tabungan & Investasi"} items={data.savings.items} colorHex={CATEGORY_COLORS.savings} onRenameCategory={(val) => handleRenameFixed('savings', val)} onRequestDeleteCategory={() => setDeleteTarget({ type: 'category', id: 'savings', name: data.savings?.name || 'Tabungan & Investasi', categoryKey: 'savings' })} onRequestDeleteItem={(id, name) => setDeleteTarget({ type: 'item', id, name, categoryKey: 'savings' })} onUpdateItems={i => onChange({ ...data, savings: { ...data.savings, items: i } })} canDelete={true} canRename={true} />}
         
-        {data.debt && <CategorySection title="Hutang & Cicilan" items={data.debt.items} colorHex={CATEGORY_COLORS.debt} onRenameCategory={() => {}} onRequestDeleteCategory={() => setDeleteTarget({ type: 'category', id: 'debt', name: 'Hutang & Cicilan', categoryKey: 'debt' })} onRequestDeleteItem={(id, name) => setDeleteTarget({ type: 'item', id, name, categoryKey: 'debt' })} onUpdateItems={i => onChange({ ...data, debt: { items: i } })} canDelete={false} canRename={false} />}
+        {data.debt && <CategorySection title={data.debt.name || "Hutang & Cicilan"} items={data.debt.items} colorHex={CATEGORY_COLORS.debt} onRenameCategory={(val) => handleRenameFixed('debt', val)} onRequestDeleteCategory={() => setDeleteTarget({ type: 'category', id: 'debt', name: data.debt?.name || 'Hutang & Cicilan', categoryKey: 'debt' })} onRequestDeleteItem={(id, name) => setDeleteTarget({ type: 'item', id, name, categoryKey: 'debt' })} onUpdateItems={i => onChange({ ...data, debt: { ...data.debt, items: i } })} canDelete={true} canRename={true} />}
         
         {(data.custom||[]).map((cat, idx) => (
           <CategorySection key={cat.id} title={cat.name} items={cat.items} colorHex={CATEGORY_COLORS.extra[idx % CATEGORY_COLORS.extra.length]} onRenameCategory={(newTitle) => onChange({...data, custom: data.custom!.map(c => c.id === cat.id ? {...c, name: newTitle} : c)})} onRequestDeleteCategory={() => setDeleteTarget({ type: 'category', id: cat.id, name: cat.name, categoryKey: 'custom' })} onRequestDeleteItem={(id, name) => setDeleteTarget({ type: 'item', id, name, categoryKey: cat.id })} onUpdateItems={i => onChange({ ...data, custom: data.custom!.map(c => c.id === cat.id ? { ...c, items: i } : c) })} />
@@ -280,11 +341,16 @@ const Budget: React.FC<BudgetProps> = ({ income, data, onChange }) => {
 const OthersSection: React.FC<{data: any, onUpdate: (d: any)=>void, onRequestDelete: ()=>void, onRequestDeleteItem: (id: string, name: string) => void}> = ({data, onUpdate, onRequestDelete, onRequestDeleteItem}) => {
   const [expanded, setExpanded] = useState(false);
   const totalAct = data.items?.reduce((a:any, b:any)=>a+(b.actual||0), 0) || 0;
+  const totalAlloc = data.allocation || 0;
+  const isOver = totalAct > totalAlloc;
+  const remaining = totalAlloc - totalAct;
+  const progress = totalAlloc > 0 ? (totalAct / totalAlloc) * 100 : 0;
+  
   const itemsWithActual = data.items?.filter((item:any) => (item.actual || 0) > 0).length || 0;
   const totalItems = data.items?.length || 0;
 
   return (
-    <div className="glass-panel rounded-[2rem] overflow-hidden mb-6 transition-all hover:shadow-2xl" style={{ borderLeft: '6px solid #8B5CF6' }}>
+    <div className={`glass-panel rounded-[2rem] overflow-hidden mb-6 transition-all ${isOver ? 'ring-2 ring-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.3)]' : 'hover:shadow-2xl'}`} style={{ borderLeft: '6px solid #8B5CF6' }}>
       <div className="flex items-stretch border-b border-white/5">
         <div className="flex-1 p-5 sm:p-6 flex items-center gap-4 sm:gap-5 cursor-pointer hover:bg-white/5 transition-colors" onClick={() => setExpanded(!expanded)}>
            <div className="p-3 rounded-2xl bg-slate-900 text-[#8B5CF6] shrink-0">
@@ -293,11 +359,20 @@ const OthersSection: React.FC<{data: any, onUpdate: (d: any)=>void, onRequestDel
            <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <h4 className="font-black text-sm sm:text-lg text-white uppercase tracking-tighter">Lain-lain / Hiburan</h4>
-                  <span className="text-[9px] sm:text-[10px] font-black text-slate-400 bg-slate-900 px-2 sm:px-3 py-1 rounded-full border border-slate-700">{itemsWithActual}/{totalItems} TERISI</span>
+                  <div className="flex gap-2">
+                    <span className="text-[9px] sm:text-[10px] font-black text-slate-400 bg-slate-900 px-2 sm:px-3 py-1 rounded-full border border-slate-700 uppercase">{itemsWithActual}/{totalItems} TERISI</span>
+                    {isOver && (
+                      <span className="flex items-center gap-1 text-[8px] sm:text-[9px] font-black text-white bg-rose-600 px-2.5 py-1 rounded-full animate-pulse shadow-lg shadow-rose-900/40">
+                        <BellRing size={10} /> ALARM
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex gap-4 mt-1 text-[9px] sm:text-[10px] font-black uppercase text-slate-500 tracking-widest">
-                  <span>LIMIT: <span className="text-indigo-400">{formatRupiah(data.allocation)}</span></span>
-                  <span>TERPAKAI: <span className="text-violet-400">{formatRupiah(totalAct)}</span></span>
+                <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2.5 text-[9px] sm:text-[10px] font-black uppercase text-slate-500 tracking-widest pt-2 border-t border-white/5">
+                  <span>LIMIT: <span className="text-white">{formatRupiah(totalAlloc)}</span></span>
+                  <span>AKTUAL: <span className={isOver ? 'text-rose-400' : 'text-violet-400'}>{formatRupiah(totalAct)}</span></span>
+                  <span className="border-l border-white/10 pl-3">SISA: <span className={remaining < 0 ? 'text-rose-400' : 'text-emerald-400 font-black'}>{formatRupiah(remaining)}</span></span>
+                  <span className="border-l border-white/10 pl-3">PROGRES: <span className={isOver ? 'text-rose-400' : 'text-indigo-400'}>{progress.toFixed(0)}%</span></span>
                 </div>
            </div>
         </div>

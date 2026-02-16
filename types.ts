@@ -25,6 +25,7 @@ export interface OtherBudgetItem {
 
 export interface BudgetCategory {
   items: BudgetItem[];
+  name?: string; // Optional custom name for fixed categories
 }
 
 export interface CustomBudgetCategory extends BudgetCategory {
@@ -76,9 +77,9 @@ export const DEFAULT_SALARY: SalaryData = {
 };
 
 export const DEFAULT_BUDGET: BudgetData = {
-  needs: { items: [] },
-  savings: { items: [] },
-  debt: { items: [] },
+  needs: { items: [], name: 'Kebutuhan Pokok' },
+  savings: { items: [], name: 'Tabungan & Investasi' },
+  debt: { items: [], name: 'Hutang & Cicilan' },
   others: { allocation: 0, items: [] },
   custom: []
 };

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { AppState, MonthlyData, DEFAULT_SALARY, DEFAULT_BUDGET } from './types';
 import SalarySlip from './components/SalarySlip';
@@ -6,8 +5,9 @@ import Budget from './components/Budget';
 import MonthlyCharts from './components/MonthlyCharts';
 import Investments from './components/Investments';
 import YearlySummary from './components/YearlySummary';
+import AIAnalysis from './components/AIAnalysis';
 import { calculateGrossIncome, calculateTax, calculateOvertime, calculateBonus } from './utils';
-import { Wallet, LayoutDashboard, PieChart, TrendingUp, Calendar, ChevronLeft, ChevronRight, Cloud, Loader2, CheckCircle2 } from 'lucide-react';
+import { Wallet, LayoutDashboard, PieChart, TrendingUp, Calendar, ChevronLeft, ChevronRight, Cloud, Loader2, CheckCircle2, Sparkles } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const TABS = [
@@ -16,6 +16,7 @@ const TABS = [
   { id: 'charts', label: 'Grafik', icon: PieChart },
   { id: 'invest', label: 'Aset', icon: TrendingUp },
   { id: 'year', label: 'Tahunan', icon: Calendar },
+  { id: 'ai', label: 'AI Analisis', icon: Sparkles },
 ];
 
 const App: React.FC = () => {
@@ -127,7 +128,6 @@ const App: React.FC = () => {
         budget: { ...DEFAULT_BUDGET }, 
         investments: [] 
       };
-      // Menjamin referensi objek baru untuk mendeteksi penghapusan item di level mana pun
       const updatedMonth = { ...existing, ...newData };
       return { 
         ...prev, 
@@ -155,7 +155,8 @@ const App: React.FC = () => {
                      <Wallet className="text-white h-5 w-5 sm:h-6 sm:w-6" />
                   </div>
                   <div>
-                    <h1 className="text-sm sm:text-xl font-black text-white uppercase tracking-tight leading-tight">ANIQ SUSILO - FINANCE MONTHLY</h1>
+                    <h1 className="text-sm sm:text-xl font-black text-white uppercase tracking-tight leading-tight">ANIQ SUSILO</h1>
+                    <p className="text-[10px] sm:text-xs font-black text-indigo-400 uppercase tracking-widest mt-0.5">FINANCE MONTHLY</p>
                   </div>
                 </div>
                 <div className="flex sm:hidden items-center bg-slate-800 rounded-lg p-1 border border-slate-700">
@@ -201,6 +202,7 @@ const App: React.FC = () => {
         {activeTab === 'charts' && <MonthlyCharts budgetData={currentData.budget} income={currentNetIncome} />}
         {activeTab === 'invest' && <Investments items={currentData.investments} onChange={(i) => updateCurrentData({ investments: i })} />}
         {activeTab === 'year' && <YearlySummary appState={appState} year={currentDate.getFullYear()} />}
+        {activeTab === 'ai' && <AIAnalysis currentMonthData={currentData} netIncome={currentNetIncome} />}
       </main>
       {showCopyModal && (
         <div className="fixed inset-0 bg-slate-950/80 z-[100] flex items-center justify-center p-4 backdrop-blur-md">

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BudgetData } from '../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid } from 'recharts';
@@ -44,9 +43,9 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => 
     }
   };
 
-  addCategory('Pokok', budgetData.needs?.items?.reduce((a, b) => a + (b.budget || 0), 0) || 0, budgetData.needs?.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0, CATEGORY_COLORS['Pokok']);
-  addCategory('Tabungan', budgetData.savings?.items?.reduce((a, b) => a + (b.budget || 0), 0) || 0, budgetData.savings?.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0, CATEGORY_COLORS['Tabungan']);
-  addCategory('Cicilan', budgetData.debt?.items?.reduce((a, b) => a + (b.budget || 0), 0) || 0, budgetData.debt?.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0, CATEGORY_COLORS['Cicilan']);
+  addCategory(budgetData.needs?.name || 'Pokok', budgetData.needs?.items?.reduce((a, b) => a + (b.budget || 0), 0) || 0, budgetData.needs?.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0, CATEGORY_COLORS['Pokok']);
+  addCategory(budgetData.savings?.name || 'Tabungan', budgetData.savings?.items?.reduce((a, b) => a + (b.budget || 0), 0) || 0, budgetData.savings?.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0, CATEGORY_COLORS['Tabungan']);
+  addCategory(budgetData.debt?.name || 'Cicilan', budgetData.debt?.items?.reduce((a, b) => a + (b.budget || 0), 0) || 0, budgetData.debt?.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0, CATEGORY_COLORS['Cicilan']);
 
   budgetData.custom?.forEach((cat, idx) => {
     addCategory(cat.name || 'Custom', cat.items?.reduce((a, b) => a + (b.budget || 0), 0) || 0, cat.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0, EXTRA_COLORS[idx % EXTRA_COLORS.length]);
@@ -111,25 +110,20 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => 
     return `Rp ${(val / 1000).toFixed(0)}k`;
   };
 
-  const RenderLegend = ({ data, total }: { data: any[], total: number }) => (
+  const RenderLegend = ({ data }: { data: any[] }) => (
     <div className="mt-6 flex flex-wrap justify-center gap-x-4 gap-y-2 px-2">
       {data.map((item, idx) => {
-        const val = item.Anggaran || item.Aktual || 0;
-        const percent = total > 0 ? ((val / total) * 100).toFixed(0) : 0;
         return (
           <div key={idx} className="flex items-center gap-1.5 bg-slate-900/50 px-3 py-1.5 rounded-xl border border-white/5">
             <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color || item.fill }}></div>
             <span className="text-[9px] font-black uppercase tracking-wider" style={{ color: item.color || item.fill }}>
-              {item.name} ({percent}%)
+              {item.name}
             </span>
           </div>
         );
       })}
     </div>
   );
-
-  const totalPlanned = categories.reduce((a, b) => a + b.Anggaran, 0);
-  const totalActual = categories.reduce((a, b) => a + b.Aktual, 0);
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-fadeIn pb-10">
@@ -233,7 +227,7 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => 
                 </PieChart>
              </ResponsiveContainer>
            </div>
-           <RenderLegend data={categories.filter(c => c.Anggaran > 0)} total={totalPlanned} />
+           <RenderLegend data={categories.filter(c => c.Anggaran > 0)} />
         </div>
 
         <div className="glass-panel p-6 sm:p-8 rounded-[2rem] border border-white/10 flex flex-col items-center">
@@ -263,7 +257,6 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => 
            </div>
            <RenderLegend 
             data={categories.filter(c => c.Aktual > 0).map(cat => ({...cat, color: cat.isOver ? '#F43F5E' : cat.color}))} 
-            total={totalActual} 
            />
         </div>
       </div>

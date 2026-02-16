@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { InvestmentItem } from '../types';
 import CurrencyInput from './ui/CurrencyInput';
@@ -122,12 +121,11 @@ const Investments: React.FC<InvestmentsProps> = ({ items, onChange }) => {
               </div>
               <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 px-2">
                 {validPieItems.map((item, idx) => {
-                  const percent = totalPortfolio > 0 ? ((item.currentValue / totalPortfolio) * 100).toFixed(0) : 0;
                   return (
                     <div key={idx} className="flex items-center gap-1.5 bg-slate-900/50 px-3 py-1.5 rounded-xl border border-white/5">
                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
                       <span className="text-[9px] font-black uppercase tracking-wider" style={{ color: item.color }}>
-                        {item.name} ({percent}%)
+                        {item.name}
                       </span>
                     </div>
                   );
