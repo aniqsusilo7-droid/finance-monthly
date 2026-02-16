@@ -7,7 +7,7 @@ import Investments from './components/Investments';
 import YearlySummary from './components/YearlySummary';
 import AIAnalysis from './components/AIAnalysis';
 import { calculateGrossIncome, calculateTax, calculateOvertime, calculateBonus } from './utils';
-import { Wallet, LayoutDashboard, PieChart, TrendingUp, Calendar, ChevronLeft, ChevronRight, Cloud, Loader2, CheckCircle2, Sparkles } from 'lucide-react';
+import { Wallet, LayoutDashboard, PieChart, TrendingUp, Calendar, ChevronLeft, ChevronRight, Cloud, Loader2, CheckCircle2, Sparkles, Sun, Moon } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const TABS = [
@@ -27,6 +27,11 @@ const App: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [prevMonthKey, setPrevMonthKey] = useState<string | null>(null);
+  
+  // Theme state
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    return (localStorage.getItem('app-theme') as 'dark' | 'light') || 'dark';
+  });
 
   const currentMonthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
   
@@ -35,6 +40,13 @@ const App: React.FC = () => {
     budget: { ...DEFAULT_BUDGET },
     investments: []
   };
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('app-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -145,7 +157,7 @@ const App: React.FC = () => {
   if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-[#0f172a]"><Loader2 className="w-10 h-10 text-indigo-400 animate-spin" /></div>;
 
   return (
-    <div className="min-h-screen bg-[#0f172a] font-sans selection:bg-indigo-500/30 selection:text-indigo-200">
+    <div className="min-h-screen font-sans selection:bg-indigo-500/30 selection:text-indigo-200 theme-transition">
       <nav className="sticky top-0 z-50 pt-2 px-2 sm:pt-4 sm:px-6">
         <div className="max-w-7xl mx-auto glass-panel rounded-xl sm:rounded-2xl shadow-xl border border-white/5">
           <div className="flex flex-col sm:flex-row items-center justify-between p-3 sm:px-6 sm:h-20 gap-3">
@@ -159,15 +171,31 @@ const App: React.FC = () => {
                     <p className="text-[10px] sm:text-xs font-black text-indigo-400 uppercase tracking-widest mt-0.5">FINANCE MONTHLY</p>
                   </div>
                 </div>
-                <div className="flex sm:hidden items-center bg-slate-800 rounded-lg p-1 border border-slate-700">
-                   <button onClick={() => changeMonth(-1)} className="p-1.5"><ChevronLeft size={16} /></button>
-                   <div className="px-2 font-mono font-black text-indigo-400 text-xs uppercase">
-                     {currentDate.toLocaleString('id-ID', { month: 'short', year: '2-digit' })}
+                <div className="flex sm:hidden items-center gap-2">
+                   <button onClick={toggleTheme} className="p-2 bg-slate-800 rounded-lg border border-slate-700 text-amber-400">
+                     {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} className="text-indigo-400" />}
+                   </button>
+                   <div className="flex items-center bg-slate-800 rounded-lg p-1 border border-slate-700">
+                      <button onClick={() => changeMonth(-1)} className="p-1.5"><ChevronLeft size={16} /></button>
+                      <div className="px-2 font-mono font-black text-indigo-400 text-xs uppercase">
+                        {currentDate.toLocaleString('id-ID', { month: 'short', year: '2-digit' })}
+                      </div>
+                      <button onClick={() => changeMonth(1)} className="p-1.5"><ChevronRight size={16} /></button>
                    </div>
-                   <button onClick={() => changeMonth(1)} className="p-1.5"><ChevronRight size={16} /></button>
                 </div>
             </div>
             <div className="flex items-center gap-4">
+                <button 
+                  onClick={toggleTheme}
+                  className="hidden sm:flex items-center gap-2 px-4 py-2 bg-slate-800/80 rounded-xl border border-slate-700 shadow-sm hover:bg-slate-700 transition-colors"
+                  title="Ganti Tema"
+                >
+                  {theme === 'dark' ? (
+                    <><Sun size={18} className="text-amber-400" /><span className="text-[10px] font-black uppercase text-slate-300">Tema Terang</span></>
+                  ) : (
+                    <><Moon size={18} className="text-indigo-400" /><span className="text-[10px] font-black uppercase text-slate-600">Tema Gelap</span></>
+                  )}
+                </button>
                 <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-lg border border-slate-700/50">
                   {saveStatus === 'saving' ? <Loader2 size={14} className="animate-spin text-indigo-400" /> : saveStatus === 'saved' ? <CheckCircle2 size={14} className="text-emerald-400" /> : <Cloud size={12} className="text-slate-500"/>}
                   <span className="text-[10px] font-black uppercase text-slate-400">{saveStatus === 'saving' ? 'Saving' : saveStatus === 'saved' ? 'Saved' : 'Synced'}</span>

@@ -11,7 +11,7 @@ interface InvestmentsProps {
   onChange: (items: InvestmentItem[]) => void;
 }
 
-const COLORS = ['#6366F1', '#3B82F6', '#10B981', '#F59E0B', '#F43F5E', '#8B5CF6'];
+const COLORS = ['#4F46E5', '#2563EB', '#059669', '#D97706', '#E11D48', '#7C3AED'];
 
 const Investments: React.FC<InvestmentsProps> = ({ items, onChange }) => {
   const [deleteTarget, setDeleteTarget] = useState<InvestmentItem | null>(null);
@@ -51,7 +51,7 @@ const Investments: React.FC<InvestmentsProps> = ({ items, onChange }) => {
       <text 
         x={x} 
         y={y} 
-        fill="white" 
+        fill="var(--chart-label)" 
         textAnchor={x > cx ? 'start' : 'end'} 
         dominantBaseline="central" 
         fontSize={10} 
@@ -74,13 +74,13 @@ const Investments: React.FC<InvestmentsProps> = ({ items, onChange }) => {
            <div className="relative z-10">
              <div className="flex items-center gap-2 mb-2">
                <Briefcase size={20} className="text-indigo-400" />
-               <h3 className="text-slate-400 font-black text-xs uppercase tracking-wider">Total Nilai Aset</h3>
+               <h3 className="text-slate-500 font-black text-xs uppercase tracking-wider">Total Nilai Aset</h3>
              </div>
-             <div className="text-3xl sm:text-4xl font-black text-white mb-6 tracking-tight">{formatRupiah(totalPortfolio)}</div>
+             <div className="text-3xl sm:text-4xl font-black text-[var(--text-primary)] mb-6 tracking-tight">{formatRupiah(totalPortfolio)}</div>
              <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
-                <div className="flex justify-between text-[10px] font-black uppercase text-slate-400 mb-2">
+                <div className="flex justify-between text-[10px] font-black uppercase text-slate-500 mb-2">
                   <span>Target Progress</span>
-                  <span className="text-indigo-400">{progress.toFixed(1)}%</span>
+                  <span className="text-indigo-600 font-black">{progress.toFixed(1)}%</span>
                 </div>
                 <div className="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden">
                   <div className="bg-gradient-to-r from-indigo-600 to-blue-500 h-full transition-all duration-1000 shadow-lg" style={{ width: `${Math.min(progress, 100)}%` }}></div>
@@ -90,7 +90,7 @@ const Investments: React.FC<InvestmentsProps> = ({ items, onChange }) => {
         </div>
 
         <div className="glass-panel p-6 rounded-[2rem] flex flex-col items-center justify-center min-h-[350px] border border-slate-800">
-          <h3 className="w-full text-left text-slate-400 font-black text-xs uppercase tracking-wider mb-4 pl-2 border-b border-slate-800/50 pb-2">Alokasi Aset (%)</h3>
+          <h3 className="w-full text-left text-slate-500 font-black text-xs uppercase tracking-wider mb-4 pl-2 border-b border-slate-700/10 pb-2">Alokasi Aset (%)</h3>
           {validPieItems.length > 0 ? (
             <>
               <div className="w-full h-[240px]">
@@ -102,9 +102,9 @@ const Investments: React.FC<InvestmentsProps> = ({ items, onChange }) => {
                       innerRadius={45} 
                       outerRadius={70} 
                       dataKey="currentValue" 
-                      stroke="#0f172a" 
+                      stroke="var(--bg-app)" 
                       strokeWidth={3} 
-                      labelLine={{ stroke: 'rgba(255,255,255,0.3)', strokeWidth: 1 }}
+                      labelLine={{ stroke: 'var(--text-secondary)', strokeWidth: 1 }}
                       label={renderCustomLabel}
                       paddingAngle={2}
                     >
@@ -112,9 +112,9 @@ const Investments: React.FC<InvestmentsProps> = ({ items, onChange }) => {
                     </Pie>
                     <Tooltip 
                       formatter={(v:any)=>formatRupiah(v)} 
-                      contentStyle={{backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px'}}
-                      itemStyle={{ color: '#ffffff', fontWeight: '900' }}
-                      labelStyle={{ color: '#ffffff', fontWeight: '900' }}
+                      contentStyle={{backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--border-main)', borderRadius: '12px'}}
+                      itemStyle={{ color: 'var(--text-primary)', fontWeight: '900' }}
+                      labelStyle={{ color: 'var(--text-primary)', fontWeight: '900' }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
@@ -143,7 +143,7 @@ const Investments: React.FC<InvestmentsProps> = ({ items, onChange }) => {
 
       <div className="glass-panel rounded-[2rem] overflow-hidden border border-slate-800 shadow-xl">
          <div className="p-5 sm:p-6 border-b border-slate-800 flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center bg-slate-800/30">
-            <h3 className="font-black text-base sm:text-lg text-white uppercase tracking-tight flex items-center gap-2">
+            <h3 className="font-black text-base sm:text-lg text-[var(--text-primary)] uppercase tracking-tight flex items-center gap-2">
                <div className="w-1.5 h-5 bg-indigo-500 rounded-full"></div> DAFTAR ASET & INVESTASI
             </h3>
             <button type="button" onClick={addItem} className="w-full sm:w-auto px-5 py-3 bg-indigo-600 text-white rounded-xl flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg">
@@ -155,7 +155,7 @@ const Investments: React.FC<InvestmentsProps> = ({ items, onChange }) => {
               <div key={item.id} className="bg-slate-800/40 p-4 sm:p-5 rounded-2xl border border-slate-700/50 grid grid-cols-2 md:grid-cols-12 gap-3 sm:gap-4 items-end transition-colors hover:border-slate-600 group/asset">
                   <div className="col-span-2 md:col-span-4">
                     <label className="text-[9px] text-slate-500 uppercase font-black mb-1.5 block">Nama Aset</label>
-                    <input type="text" value={item.name} onChange={(e) => updateItem(item.id, 'name', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white text-sm font-black outline-none focus:border-indigo-500" placeholder="Emas, Saham, dll" />
+                    <input type="text" value={item.name} onChange={(e) => updateItem(item.id, 'name', e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-[var(--text-primary)] text-sm font-black outline-none focus:border-indigo-500" placeholder="Emas, Saham, dll" />
                   </div>
                   <div className="col-span-2 md:col-span-3">
                     <CurrencyInput label="Saldo" value={item.currentValue} onChange={(v) => updateItem(item.id, 'currentValue', v)} />
@@ -164,10 +164,10 @@ const Investments: React.FC<InvestmentsProps> = ({ items, onChange }) => {
                     <CurrencyInput label="Target" value={item.targetValue} onChange={(v) => updateItem(item.id, 'targetValue', v)} />
                   </div>
                   <div className="col-span-2 md:col-span-2 flex justify-between items-center pt-2">
-                    <div className="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700 font-mono font-black text-indigo-400 text-[10px]">
+                    <div className="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700 font-mono font-black text-indigo-600 text-[10px]">
                       {item.targetValue > 0 ? ((item.currentValue/item.targetValue)*100).toFixed(0) : 0}%
                     </div>
-                    <button type="button" onClick={() => setDeleteTarget(item)} className="p-3 text-slate-600 hover:text-rose-500"><Trash2 size={20} /></button>
+                    <button type="button" onClick={() => setDeleteTarget(item)} className="p-3 text-slate-500 hover:text-rose-600"><Trash2 size={20} /></button>
                   </div>
               </div>
             ))}
