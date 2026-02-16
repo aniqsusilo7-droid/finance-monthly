@@ -14,6 +14,14 @@
        
        body {
          font-family: 'Plus Jakarta Sans', sans-serif;
+         background-color: #0f172a; /* Deep Slate */
+         color: #f1f5f9;
+         font-weight: 800; /* Force bold globally */
+       }
+
+       /* Global boldness for all elements as requested */
+       * {
+         font-weight: 800 !important;
        }
 
        /* Animation Utilities */
@@ -22,16 +30,31 @@
        }
 
        .glass-panel {
-         background: rgba(255, 255, 255, 0.7);
+         background: rgba(30, 41, 59, 0.7);
          backdrop-filter: blur(20px);
          -webkit-backdrop-filter: blur(20px);
-         border: 1px solid rgba(255, 255, 255, 0.8);
-         box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.05);
+         border: 1px solid rgba(255, 255, 255, 0.1);
+         box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
        }
        
        @keyframes fadeIn {
          from { opacity: 0; transform: translateY(20px); }
          to { opacity: 1; transform: translateY(0); }
+       }
+
+       /* Scrollbar customization */
+       ::-webkit-scrollbar {
+         width: 8px;
+       }
+       ::-webkit-scrollbar-track {
+         background: #1e293b;
+       }
+       ::-webkit-scrollbar-thumb {
+         background: #475569;
+         border-radius: 10px;
+       }
+       ::-webkit-scrollbar-thumb:hover {
+         background: #64748b;
        }
     </style>
   <script type="importmap">
@@ -48,8 +71,9 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-[#F8FAFC] text-slate-800 min-h-screen">
+  <body class="bg-[#0f172a] text-slate-100 min-h-screen">
     <div id="root"></div>
+    <!-- SVG Filter Removed to satisfy "tulisan 3D nya di hapus" -->
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {

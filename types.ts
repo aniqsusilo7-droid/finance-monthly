@@ -27,16 +27,22 @@ export interface BudgetCategory {
   items: BudgetItem[];
 }
 
+export interface CustomBudgetCategory extends BudgetCategory {
+  id: string;
+  name: string;
+}
+
 export interface OtherBudgetCategory {
   allocation: number;
   items: OtherBudgetItem[];
 }
 
 export interface BudgetData {
-  needs: BudgetCategory;
-  savings: BudgetCategory;
-  debt: BudgetCategory;
-  others: OtherBudgetCategory;
+  needs?: BudgetCategory;
+  savings?: BudgetCategory;
+  debt?: BudgetCategory;
+  others?: OtherBudgetCategory;
+  custom?: CustomBudgetCategory[];
 }
 
 export interface InvestmentItem {
@@ -74,4 +80,5 @@ export const DEFAULT_BUDGET: BudgetData = {
   savings: { items: [] },
   debt: { items: [] },
   others: { allocation: 0, items: [] },
+  custom: []
 };
