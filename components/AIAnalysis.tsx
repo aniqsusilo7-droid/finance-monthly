@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import { MonthlyData } from '../types';
 import { formatRupiah } from '../utils';
-import { Sparkles, BrainCircuit, RefreshCw, TrendingUp, AlertCircle, CheckCircle2, Wifi, WifiOff } from 'lucide-react';
+import { Sparkles, BrainCircuit, RefreshCw, TrendingUp, AlertCircle, CheckCircle2, Wifi, WifiOff, Key } from 'lucide-react';
 
 interface AIAnalysisProps {
   currentMonthData: MonthlyData;
@@ -13,11 +13,40 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) 
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasKey, setHasKey] = useState<boolean>(!!process.env.API_KEY);
+
+  // Cek ketersediaan API Key saat komponen dimuat
+  useEffect(() => {
+    const checkKey = async () => {
+      if (window.aistudio?.hasSelectedApiKey) {
+        const selected = await window.aistudio.hasSelectedApiKey();
+        setHasKey(selected || !!process.env.API_KEY);
+      }
+    };
+    checkKey();
+  }, []);
+
+  const handleOpenKeySelector = async () => {
+    if (window.aistudio?.openSelectKey) {
+      await window.aistudio.openSelectKey();
+      // Asumsikan pemilihan berhasil sesuai instruksi teknis
+      setHasKey(true);
+      setError(null);
+    } else {
+      setError("Fitur pemilihan API Key tidak tersedia di browser ini. Pastikan Anda menggunakan lingkungan yang mendukung.");
+    }
+  };
 
   const generateAnalysis = async () => {
-    // Check local network status first
+    // 1. Cek Koneksi Internet
     if (!navigator.onLine) {
       setError("Perangkat Anda sedang offline. Mohon hubungkan ke internet untuk menggunakan fitur AI Analysis.");
+      return;
+    }
+
+    // 2. Cek API Key
+    if (!process.env.API_KEY && !hasKey) {
+      setError("API Key diperlukan untuk analisis. Silakan hubungkan API Key Anda.");
       return;
     }
 
@@ -25,12 +54,7 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) 
     setError(null);
     
     try {
-      // Ensure API Key exists
-      if (!process.env.API_KEY) {
-        throw new Error("API Key tidak ditemukan dalam sistem.");
-      }
-
-      // Initialize AI inside the function to ensure the latest context/key
+      // Inisialisasi AI tepat sebelum digunakan untuk mengambil kunci terbaru
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       
       const budgetDetails = JSON.stringify({
@@ -53,7 +77,7 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) 
       3. Analisis Aset & Investasi (Seberapa dekat dengan target).
       4. 3 Saran Praktis untuk bulan depan agar kondisi keuangan Aniq Susilo semakin kuat.
       
-      Berikan respon dalam format Markdown yang rapi dengan heading dan poin-poin. Jangan gunakan teknis yang terlalu rumit, buatlah mudah dipahami dan berorientasi pada tindakan.`;
+      Berikan respon dalam format Markdown yang rapi dengan heading dan poin-poin.`;
 
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
@@ -67,12 +91,11 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) 
       setAnalysis(response.text);
     } catch (err: any) {
       console.error("AI Analysis Error:", err);
-      if (err.message?.includes('fetch') || err.name === 'TypeError') {
-        setError("Gagal terhubung ke server AI. Periksa koneksi internet Anda atau coba lagi beberapa saat lagi.");
-      } else if (err.message?.includes('403')) {
-        setError("Akses ditolak (Error 403). Pastikan layanan AI tersedia di wilayah Anda.");
+      if (err.message?.includes('entity was not found') || err.message?.includes('404')) {
+        setHasKey(false);
+        setError("API Key tidak valid atau telah kedaluwarsa. Silakan hubungkan kembali.");
       } else {
-        setError(`Error: ${err.message || "Terjadi kesalahan sistem saat menghubungi AI."}`);
+        setError(`Terjadi kendala: ${err.message || "Gagal menghubungi AI. Pastikan internet Anda stabil."}`);
       }
     } finally {
       setIsLoading(false);
@@ -96,23 +119,41 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) 
             Dapatkan analisis cerdas dan rekomendasi strategis berdasarkan data keuangan Anda menggunakan teknologi Gemini AI yang selalu online.
           </p>
           
-          <button 
-            onClick={generateAnalysis}
-            disabled={isLoading}
-            className={`flex items-center gap-3 px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-900/40 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95`}
-          >
-            {isLoading ? (
-              <>
-                <RefreshCw className="w-5 h-5 animate-spin" />
-                Proses Analisis...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-5 h-5" />
-                Mulai Analisis Online
-              </>
+          <div className="flex flex-col gap-4">
+            {!hasKey && (
+              <button 
+                onClick={handleOpenKeySelector}
+                className="flex items-center gap-3 px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white rounded-2xl font-black uppercase tracking-widest transition-all border border-slate-700"
+              >
+                <Key className="w-5 h-5 text-indigo-400" />
+                Hubungkan API Key
+              </button>
             )}
-          </button>
+
+            <button 
+              onClick={generateAnalysis}
+              disabled={isLoading || (!hasKey && !process.env.API_KEY)}
+              className={`flex items-center gap-3 px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest transition-all shadow-lg shadow-indigo-900/40 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95`}
+            >
+              {isLoading ? (
+                <>
+                  <RefreshCw className="w-5 h-5 animate-spin" />
+                  Proses Analisis...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-5 h-5" />
+                  Mulai Analisis Online
+                </>
+              )}
+            </button>
+            
+            {!hasKey && !process.env.API_KEY && (
+              <p className="text-[10px] text-amber-500 font-black uppercase tracking-widest animate-pulse">
+                Silakan hubungkan API Key untuk mengaktifkan AI
+              </p>
+            )}
+          </div>
         </div>
       </div>
 

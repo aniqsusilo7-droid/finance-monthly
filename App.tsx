@@ -6,8 +6,9 @@ import MonthlyCharts from './components/MonthlyCharts';
 import Investments from './components/Investments';
 import YearlySummary from './components/YearlySummary';
 import AIAnalysis from './components/AIAnalysis';
+import Login from './components/Login';
 import { calculateGrossIncome, calculateTax, calculateOvertime, calculateBonus } from './utils';
-import { Wallet, LayoutDashboard, PieChart, TrendingUp, Calendar, ChevronLeft, ChevronRight, Cloud, Loader2, CheckCircle2, Sparkles, Sun, Moon } from 'lucide-react';
+import { Wallet, LayoutDashboard, PieChart, TrendingUp, Calendar, ChevronLeft, ChevronRight, Cloud, Loader2, CheckCircle2, Sparkles, Sun, Moon, LogOut } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const TABS = [
@@ -15,8 +16,8 @@ const TABS = [
   { id: 'budget', label: 'Anggaran', icon: LayoutDashboard },
   { id: 'charts', label: 'Grafik', icon: PieChart },
   { id: 'invest', label: 'Aset', icon: TrendingUp },
-  { id: 'year', label: 'Tahunan', icon: Calendar },
-  { id: 'ai', label: 'AI Analisis', icon: Sparkles },
+  { id: 'year', label: 'Tahun', icon: Calendar },
+  { id: 'ai', label: 'AI', icon: Sparkles },
 ];
 
 const App: React.FC = () => {
@@ -24,11 +25,11 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState('salary');
   const [appState, setAppState] = useState<AppState>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('is_authenticated') === 'true';
+  });
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [showCopyModal, setShowCopyModal] = useState(false);
-  const [prevMonthKey, setPrevMonthKey] = useState<string | null>(null);
   
-  // Theme state
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     return (localStorage.getItem('app-theme') as 'dark' | 'light') || 'dark';
   });
@@ -47,48 +48,73 @@ const App: React.FC = () => {
   }, [theme]);
 
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  
+  const handleLogout = () => {
+    // Hapus sesi dari storage
+    localStorage.removeItem('is_authenticated');
+    // Reset semua state aplikasi untuk keamanan data di memori
+    setAppState({});
+    setActiveTab('salary');
+    setCurrentDate(new Date());
+    // Trigger perubahan view ke Login tanpa reload halaman (menghindari error link rusak)
+    setIsAuthenticated(false);
+  };
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+    
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await supabase.from('monthly_finance').select('month_id, data');
+        const { data, error } = await supabase
+          .from('monthly_finance')
+          .select('month_id, data');
+        
         if (error) throw error;
+        
         if (data) {
           const loadedState: AppState = {};
-          data.forEach((row: any) => { loadedState[row.month_id] = row.data; });
+          data.forEach((row: any) => { 
+            loadedState[row.month_id] = row.data; 
+          });
           setAppState(loadedState);
         }
       } catch (err) {
-        console.error("Error fetching data:", err);
+        console.error("Error fetching cloud finance data:", err);
       } finally {
         setIsLoading(false);
       }
     };
+    
     fetchData();
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
-    if (isLoading || !appState[currentMonthKey]) return;
+    if (!isAuthenticated || isLoading || !appState[currentMonthKey]) return;
+    
     const saveData = async () => {
       setSaveStatus('saving');
       try {
-        const { error } = await supabase.from('monthly_finance').upsert({ 
-          month_id: currentMonthKey, 
-          data: appState[currentMonthKey],
-          updated_at: new Date().toISOString()
-        });
+        const { error } = await supabase
+          .from('monthly_finance')
+          .upsert({ 
+            month_id: currentMonthKey, 
+            data: appState[currentMonthKey],
+            updated_at: new Date().toISOString()
+          });
+          
         if (error) throw error;
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 2000);
       } catch (err) {
-        console.error("Error saving data:", err);
+        console.error("Error saving to cloud:", err);
         setSaveStatus('error');
       }
     };
-    const timeoutId = setTimeout(saveData, 800);
+    
+    const timeoutId = setTimeout(saveData, 1000);
     return () => clearTimeout(timeoutId);
-  }, [appState, currentMonthKey, isLoading]);
+  }, [appState, currentMonthKey, isLoading, isAuthenticated]);
 
   const calculateCurrentIncome = (data: MonthlyData) => {
      const { salary } = data;
@@ -99,40 +125,6 @@ const App: React.FC = () => {
   };
   const currentNetIncome = calculateCurrentIncome(currentData);
 
-  useEffect(() => {
-    if (!isLoading && !appState[currentMonthKey]) {
-      const prevDate = new Date(currentDate);
-      prevDate.setMonth(currentDate.getMonth() - 1);
-      const pKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
-      if (appState[pKey]) {
-        setPrevMonthKey(pKey);
-        setShowCopyModal(true);
-      } else {
-        initializeMonth(false);
-      }
-    }
-  }, [currentMonthKey, isLoading]);
-
-  const initializeMonth = (copyFromPrev: boolean) => {
-    let newData: MonthlyData;
-    if (copyFromPrev && prevMonthKey && appState[prevMonthKey]) {
-      newData = JSON.parse(JSON.stringify(appState[prevMonthKey]));
-      if (newData.budget.needs) newData.budget.needs.items.forEach(i => i.actual = 0);
-      if (newData.budget.savings) newData.budget.savings.items.forEach(i => i.actual = 0);
-      if (newData.budget.debt) newData.budget.debt.items.forEach(i => i.actual = 0);
-      if (newData.budget.others) newData.budget.others.items.forEach(i => i.actual = 0);
-      if (newData.budget.custom) newData.budget.custom.forEach(cat => cat.items.forEach(i => i.actual = 0));
-      newData.salary.overtimeHours = 0;
-      newData.salary.bonusMultiplier = 0;
-      newData.salary.thr = 0;
-      newData.salary.leavePay = 0;
-    } else {
-      newData = { salary: { ...DEFAULT_SALARY }, budget: { ...DEFAULT_BUDGET }, investments: [] };
-    }
-    setAppState(prev => ({ ...prev, [currentMonthKey]: newData }));
-    setShowCopyModal(false);
-  };
-
   const updateCurrentData = (newData: Partial<MonthlyData>) => {
     setAppState(prev => {
       const existing = prev[currentMonthKey] || { 
@@ -140,11 +132,7 @@ const App: React.FC = () => {
         budget: { ...DEFAULT_BUDGET }, 
         investments: [] 
       };
-      const updatedMonth = { ...existing, ...newData };
-      return { 
-        ...prev, 
-        [currentMonthKey]: updatedMonth 
-      };
+      return { ...prev, [currentMonthKey]: { ...existing, ...newData } };
     });
   };
 
@@ -154,69 +142,82 @@ const App: React.FC = () => {
     setCurrentDate(newDate);
   };
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-[#0f172a]"><Loader2 className="w-10 h-10 text-indigo-400 animate-spin" /></div>;
+  if (!isAuthenticated) {
+    return <Login onAuthenticated={() => setIsAuthenticated(true)} />;
+  }
 
   return (
-    <div className="min-h-screen font-sans selection:bg-indigo-500/30 selection:text-indigo-200 theme-transition">
-      <nav className="sticky top-0 z-50 pt-2 px-2 sm:pt-4 sm:px-6">
-        <div className="max-w-7xl mx-auto glass-panel rounded-xl sm:rounded-2xl shadow-xl border border-white/5">
-          <div className="flex flex-col sm:flex-row items-center justify-between p-3 sm:px-6 sm:h-20 gap-3">
-            <div className="flex items-center justify-between w-full sm:w-auto">
-                <div className="flex items-center gap-3">
-                  <div className="bg-indigo-600 p-2 rounded-lg shadow-lg">
-                     <Wallet className="text-white h-5 w-5 sm:h-6 sm:w-6" />
-                  </div>
-                  <div>
-                    <h1 className="text-sm sm:text-xl font-black text-white uppercase tracking-tight leading-tight">ANIQ SUSILO</h1>
-                    <p className="text-[10px] sm:text-xs font-black text-indigo-400 uppercase tracking-widest mt-0.5">FINANCE MONTHLY</p>
-                  </div>
-                </div>
-                <div className="flex sm:hidden items-center gap-2">
-                   <button onClick={toggleTheme} className="p-2 bg-slate-800 rounded-lg border border-slate-700 text-amber-400">
-                     {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} className="text-indigo-400" />}
-                   </button>
-                   <div className="flex items-center bg-slate-800 rounded-lg p-1 border border-slate-700">
-                      <button onClick={() => changeMonth(-1)} className="p-1.5"><ChevronLeft size={16} /></button>
-                      <div className="px-2 font-mono font-black text-indigo-400 text-xs uppercase">
-                        {currentDate.toLocaleString('id-ID', { month: 'short', year: '2-digit' })}
-                      </div>
-                      <button onClick={() => changeMonth(1)} className="p-1.5"><ChevronRight size={16} /></button>
-                   </div>
-                </div>
+    <div className="min-h-screen font-sans selection:bg-indigo-500/30 theme-transition pb-20 sm:pb-8">
+      {/* Sticky Header Optimized for Mobile */}
+      <nav className="sticky top-0 z-50 pt-1 sm:pt-4 px-1 sm:px-6">
+        <div className="max-w-7xl mx-auto glass-panel rounded-xl sm:rounded-2xl shadow-xl border border-white/5 overflow-hidden">
+          <div className="flex items-center justify-between p-2 sm:px-6 sm:h-20 gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 text-left">
+              <div className="bg-indigo-600 p-1.5 sm:p-2 rounded-lg shadow-lg shrink-0">
+                 <Wallet className="text-white h-4 w-4 sm:h-6 sm:w-6" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-[10px] sm:text-xl font-black text-white uppercase tracking-tight leading-none truncate">ANIQ SUSILO</h1>
+                <p className="text-[7px] sm:text-xs font-black text-indigo-400 uppercase tracking-widest mt-0.5 truncate">FINANCE MONTHLY</p>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-                <button 
-                  onClick={toggleTheme}
-                  className="hidden sm:flex items-center gap-2 px-4 py-2 bg-slate-800/80 rounded-xl border border-slate-700 shadow-sm hover:bg-slate-700 transition-colors"
-                  title="Ganti Tema"
-                >
-                  {theme === 'dark' ? (
-                    <><Sun size={18} className="text-amber-400" /><span className="text-[10px] font-black uppercase text-slate-300">Tema Terang</span></>
+
+            <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
+                {/* Save Status */}
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                  {saveStatus === 'saving' ? (
+                    <Loader2 size={12} className="animate-spin text-indigo-400" />
+                  ) : saveStatus === 'saved' ? (
+                    <CheckCircle2 size={12} className="text-emerald-400" />
                   ) : (
-                    <><Moon size={18} className="text-indigo-400" /><span className="text-[10px] font-black uppercase text-slate-600">Tema Gelap</span></>
+                    <Cloud size={10} className="text-slate-500"/>
                   )}
-                </button>
-                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-800/50 rounded-lg border border-slate-700/50">
-                  {saveStatus === 'saving' ? <Loader2 size={14} className="animate-spin text-indigo-400" /> : saveStatus === 'saved' ? <CheckCircle2 size={14} className="text-emerald-400" /> : <Cloud size={12} className="text-slate-500"/>}
-                  <span className="text-[10px] font-black uppercase text-slate-400">{saveStatus === 'saving' ? 'Saving' : saveStatus === 'saved' ? 'Saved' : 'Synced'}</span>
+                  <span className="hidden sm:inline text-[8px] font-black uppercase text-slate-400 tracking-tighter">
+                    {saveStatus === 'saving' ? 'Syncing' : saveStatus === 'saved' ? 'Cloud Safe' : 'Connected'}
+                  </span>
                 </div>
-                <div className="hidden sm:flex items-center bg-slate-800/80 rounded-xl p-1.5 border border-slate-700 shadow-sm">
-                  <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-slate-700 rounded-lg text-slate-400"><ChevronLeft size={20} /></button>
-                  <div className="px-6 font-mono font-black text-indigo-400 w-48 text-center text-sm uppercase tracking-wider">
-                    {currentDate.toLocaleString('id-ID', { month: 'long', year: 'numeric' }).toUpperCase()}
+
+                {/* Month Navigator */}
+                <div className="flex items-center bg-slate-800/80 rounded-lg sm:rounded-xl p-1 border border-slate-700 shadow-sm">
+                  <button onClick={() => changeMonth(-1)} className="p-1 sm:p-2 hover:bg-slate-700 rounded-lg text-slate-400"><ChevronLeft size={14} className="sm:size-5" /></button>
+                  <div className="px-2 sm:px-6 font-mono font-black text-indigo-400 text-[9px] sm:text-sm uppercase tracking-wider text-center min-w-[60px] sm:min-w-[120px]">
+                    {currentDate.toLocaleString('id-ID', { month: 'short', year: '2-digit' }).toUpperCase()}
                   </div>
-                  <button onClick={() => changeMonth(1)} className="p-2 hover:bg-slate-700 rounded-lg text-slate-400"><ChevronRight size={20} /></button>
+                  <button onClick={() => changeMonth(1)} className="p-1 sm:p-2 hover:bg-slate-700 rounded-lg text-slate-400"><ChevronRight size={14} className="sm:size-5" /></button>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={toggleTheme}
+                    className="p-2 sm:px-4 sm:py-2 bg-slate-800/80 rounded-lg sm:rounded-xl border border-slate-700 transition-colors"
+                  >
+                    {theme === 'dark' ? <Sun size={14} className="text-amber-400 sm:size-5" /> : <Moon size={14} className="text-indigo-400 sm:size-5" />}
+                  </button>
+                  <button 
+                    onClick={handleLogout}
+                    className="p-2 sm:px-4 sm:py-2 bg-rose-500/10 rounded-lg sm:rounded-xl border border-rose-500/20 shadow-sm hover:bg-rose-500/20 transition-all text-rose-500"
+                  >
+                    <LogOut size={14} className="sm:size-5" />
+                  </button>
                 </div>
             </div>
           </div>
-          <div className="border-t border-slate-700/50 px-2 overflow-x-auto scrollbar-hide">
-            <div className="flex space-x-1 py-1.5 sm:py-2">
+
+          {/* Tab Navigation */}
+          <div className="border-t border-slate-700/50 px-1 overflow-x-auto scrollbar-hide">
+            <div className="flex space-x-0.5 py-1">
               {TABS.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 return (
-                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-1.5 px-3 py-2 sm:px-5 sm:py-2.5 text-xs font-black rounded-lg transition-all flex-1 justify-center sm:flex-none uppercase tracking-widest ${isActive ? 'text-white bg-indigo-600 shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
-                    <Icon size={16} />{tab.label}
+                  <button 
+                    key={tab.id} 
+                    onClick={() => setActiveTab(tab.id)} 
+                    className={`flex items-center gap-1 px-3 py-2 text-[9px] sm:text-xs font-black rounded-lg transition-all shrink-0 uppercase tracking-widest ${isActive ? 'text-white bg-indigo-600 shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                  >
+                    <Icon size={12} className="sm:size-4" />
+                    <span>{tab.label}</span>
                   </button>
                 );
               })}
@@ -224,26 +225,17 @@ const App: React.FC = () => {
           </div>
         </div>
       </nav>
-      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-24">
-        {activeTab === 'salary' && <SalarySlip data={currentData.salary} onChange={(s) => updateCurrentData({ salary: s })} />}
-        {activeTab === 'budget' && <Budget income={currentNetIncome} data={currentData.budget} onChange={(b) => updateCurrentData({ budget: b })} />}
-        {activeTab === 'charts' && <MonthlyCharts budgetData={currentData.budget} income={currentNetIncome} />}
-        {activeTab === 'invest' && <Investments items={currentData.investments} onChange={(i) => updateCurrentData({ investments: i })} />}
-        {activeTab === 'year' && <YearlySummary appState={appState} year={currentDate.getFullYear()} />}
-        {activeTab === 'ai' && <AIAnalysis currentMonthData={currentData} netIncome={currentNetIncome} />}
-      </main>
-      {showCopyModal && (
-        <div className="fixed inset-0 bg-slate-950/80 z-[100] flex items-center justify-center p-4 backdrop-blur-md">
-           <div className="bg-slate-900 p-8 rounded-3xl max-w-md w-full border border-slate-800 shadow-2xl">
-              <h3 className="text-2xl font-black text-white mb-2 uppercase tracking-tight">Bulan Baru</h3>
-              <p className="text-slate-400 mb-8 font-black">Data bulan ini belum ada. Salin template dari bulan sebelumnya?</p>
-              <div className="flex gap-4">
-                <button onClick={() => initializeMonth(true)} className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-lg">Salin</button>
-                <button onClick={() => initializeMonth(false)} className="flex-1 bg-slate-800 text-slate-200 py-3 rounded-xl font-black uppercase tracking-widest hover:bg-slate-700 transition-all">Baru</button>
-              </div>
-           </div>
+
+      <main className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="animate-fadeIn">
+          {activeTab === 'salary' && <SalarySlip data={currentData.salary} onChange={(s) => updateCurrentData({ salary: s })} />}
+          {activeTab === 'budget' && <Budget income={currentNetIncome} data={currentData.budget} onChange={(b) => updateCurrentData({ budget: b })} />}
+          {activeTab === 'charts' && <MonthlyCharts budgetData={currentData.budget} income={currentNetIncome} />}
+          {activeTab === 'invest' && <Investments items={currentData.investments} onChange={(i) => updateCurrentData({ investments: i })} />}
+          {activeTab === 'year' && <YearlySummary appState={appState} year={currentDate.getFullYear()} />}
+          {activeTab === 'ai' && <AIAnalysis currentMonthData={currentData} netIncome={currentNetIncome} />}
         </div>
-      )}
+      </main>
     </div>
   );
 };
