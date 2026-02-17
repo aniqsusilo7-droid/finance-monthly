@@ -145,11 +145,11 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => 
            </div>
         </div>
         
-        <div className="space-y-10">
+        <div className="space-y-12">
           {categoryChunks.map((chunk, chunkIdx) => (
-            <div key={chunkIdx} className="h-[320px] sm:h-[400px] w-full border-b border-slate-800/30 pb-4 last:border-0 last:pb-0">
+            <div key={chunkIdx} className="h-[450px] sm:h-[400px] w-full border-b border-slate-800/30 pb-8 last:border-0 last:pb-0">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chunk} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                <BarChart data={chunk} margin={{ top: 10, right: 5, left: 5, bottom: 25 }}>
                   <defs>
                     <linearGradient id={`planGrad-${chunkIdx}`} x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#FDE047" stopOpacity={1}/>
@@ -173,11 +173,13 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => 
                     axisLine={false} 
                     tick={{fontWeight: 900, fill: 'var(--chart-label)'}} 
                     interval={0}
+                    angle={-15}
+                    textAnchor="end"
                   />
                   <YAxis 
                     stroke="var(--chart-label)" 
                     fontSize={10} 
-                    width={60} 
+                    width={65} 
                     tickFormatter={yAxisFormatter} 
                     tickLine={false} 
                     axisLine={false} 
@@ -187,8 +189,8 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => 
                     content={<CustomTooltip />} 
                     cursor={{fill: 'rgba(0,0,0,0.05)'}} 
                   />
-                  <Bar dataKey="Anggaran" name="Rencana" fill={`url(#planGrad-${chunkIdx})`} radius={[4, 4, 0, 0]} maxBarSize={30} />
-                  <Bar dataKey="Aktual" name="Aktual" radius={[4, 4, 0, 0]} maxBarSize={30}>
+                  <Bar dataKey="Anggaran" name="Rencana" fill={`url(#planGrad-${chunkIdx})`} radius={[4, 4, 0, 0]} maxBarSize={35} />
+                  <Bar dataKey="Aktual" name="Aktual" radius={[4, 4, 0, 0]} maxBarSize={35}>
                     {chunk.map((entry, index) => (
                       <Cell key={`bar-${index}`} fill={entry.isOver ? `url(#overGrad-${chunkIdx})` : `url(#actualGrad-${chunkIdx})`} />
                     ))}
@@ -203,14 +205,14 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="glass-panel p-6 sm:p-8 rounded-[2rem] border border-white/10 flex flex-col items-center">
            <h3 className="w-full text-xs font-black text-[var(--text-primary)] uppercase tracking-widest mb-6 border-b border-slate-700/10 pb-2">Rencana Alokasi (%)</h3>
-           <div className="h-[320px] w-full">
+           <div className="h-[380px] sm:h-[320px] w-full">
              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie 
                     data={categories.filter(c => c.Anggaran > 0)} 
                     cx="50%" cy="50%" 
-                    innerRadius={55} 
-                    outerRadius={90} 
+                    innerRadius={65} 
+                    outerRadius={100} 
                     dataKey="Anggaran" 
                     stroke="var(--bg-app)" 
                     strokeWidth={4} 
@@ -231,14 +233,14 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => 
 
         <div className="glass-panel p-6 sm:p-8 rounded-[2rem] border border-white/10 flex flex-col items-center">
            <h3 className="w-full text-xs font-black text-[var(--text-primary)] uppercase tracking-widest mb-6 border-b border-slate-700/10 pb-2">Realisasi Pengeluaran (%)</h3>
-           <div className="h-[320px] w-full">
+           <div className="h-[380px] sm:h-[320px] w-full">
              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie 
                     data={categories.filter(c => c.Aktual > 0)} 
                     cx="50%" cy="50%" 
-                    innerRadius={55} 
-                    outerRadius={90} 
+                    innerRadius={65} 
+                    outerRadius={100} 
                     dataKey="Aktual" 
                     stroke="var(--bg-app)" 
                     strokeWidth={4} 

@@ -144,18 +144,18 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen font-sans selection:bg-indigo-500/30 theme-transition pb-20 sm:pb-8">
-      {/* Sticky Header Optimized for Mobile */}
-      <nav className="sticky top-0 z-50 pt-1 sm:pt-4 px-1 sm:px-6">
+    <div className="min-h-screen font-sans selection:bg-indigo-500/30 theme-transition">
+      {/* Top Header - Fixed Position (Logo & Month Only) */}
+      <header className="fixed top-0 left-0 right-0 z-50 pt-2 sm:pt-4 px-1 sm:px-6 w-full">
         <div className="max-w-7xl mx-auto glass-panel rounded-xl sm:rounded-2xl shadow-xl border border-white/5 overflow-hidden">
-          <div className="flex items-center justify-between p-2 sm:px-6 sm:h-20 gap-2">
-            <div className="flex items-center gap-2 sm:gap-3 text-left min-w-0 flex-1">
-              <div className="bg-indigo-600 p-1.5 sm:p-2 rounded-lg shadow-lg shrink-0">
-                 <Wallet className="text-white h-4 w-4 sm:h-6 sm:w-6" />
+          <div className="flex items-center justify-between p-3 sm:px-6 sm:h-24 gap-3">
+            <div className="flex items-center gap-3 sm:gap-4 text-left min-w-0 flex-1">
+              <div className="bg-indigo-600 p-2 sm:p-3 rounded-xl shadow-lg shrink-0">
+                 <Wallet className="text-white h-5 w-5 sm:h-8 sm:w-8" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-[10px] sm:text-xl font-black text-white uppercase tracking-tight leading-none truncate">ANIQ SUSILO</h1>
-                <p className="text-[7px] sm:text-xs font-black text-indigo-400 uppercase tracking-widest mt-0.5 truncate">FINANCE MONTHLY</p>
+                <h1 className="text-sm sm:text-2xl font-black text-white uppercase tracking-tight leading-none truncate">ANIQ SUSILO</h1>
+                <p className="text-[10px] sm:text-sm font-black text-indigo-400 uppercase tracking-widest mt-0.5 truncate">FINANCE MONTHLY</p>
               </div>
             </div>
 
@@ -199,30 +199,11 @@ const App: React.FC = () => {
                 </div>
             </div>
           </div>
-
-          {/* Tab Navigation */}
-          <div className="border-t border-slate-700/50 px-1 overflow-x-auto scrollbar-hide">
-            <div className="flex space-x-0.5 py-1">
-              {TABS.map((tab) => {
-                const Icon = tab.icon;
-                const isActive = activeTab === tab.id;
-                return (
-                  <button 
-                    key={tab.id} 
-                    onClick={() => setActiveTab(tab.id)} 
-                    className={`flex items-center gap-1 px-3 py-2 text-[9px] sm:text-xs font-black rounded-lg transition-all shrink-0 uppercase tracking-widest ${isActive ? 'text-white bg-indigo-600 shadow-lg' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
-                  >
-                    <Icon size={12} className="sm:size-4" />
-                    <span>{tab.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
         </div>
-      </nav>
+      </header>
 
-      <main className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
+      {/* Main Content with adjusted padding for top & bottom nav */}
+      <main className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-24 sm:pt-32 pb-24 sm:pb-12">
         <div className="animate-fadeIn">
           {activeTab === 'salary' && <SalarySlip data={currentData.salary} onChange={(s) => updateCurrentData({ salary: s })} />}
           {activeTab === 'budget' && <Budget income={currentNetIncome} data={currentData.budget} onChange={(b) => updateCurrentData({ budget: b })} />}
@@ -232,6 +213,30 @@ const App: React.FC = () => {
           {activeTab === 'ai' && <AIAnalysis currentMonthData={currentData} netIncome={currentNetIncome} />}
         </div>
       </main>
+
+      {/* Bottom Navigation - Fixed Position for Ergonomics */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 pb-2 sm:pb-4 px-1 sm:px-6 w-full">
+        <div className="max-w-7xl mx-auto glass-panel rounded-xl sm:rounded-2xl shadow-[0_-10px_30px_rgba(0,0,0,0.3)] border border-white/5 overflow-hidden">
+          <div className="px-1 overflow-x-auto scrollbar-hide">
+            <div className="flex justify-between sm:justify-center sm:gap-4 py-1.5 min-w-max sm:min-w-0">
+              {TABS.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button 
+                    key={tab.id} 
+                    onClick={() => setActiveTab(tab.id)} 
+                    className={`flex flex-col items-center gap-1 px-4 py-2.5 text-[9px] sm:text-xs font-black rounded-xl transition-all shrink-0 uppercase tracking-widest ${isActive ? 'text-white bg-indigo-600 shadow-lg scale-105' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                  >
+                    <Icon size={18} className="sm:size-5" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </nav>
     </div>
   );
 };
