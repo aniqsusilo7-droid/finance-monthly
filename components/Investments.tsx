@@ -8,12 +8,13 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface InvestmentsProps {
   items: InvestmentItem[];
+  isPrivacy?: boolean;
   onChange: (items: InvestmentItem[]) => void;
 }
 
 const COLORS = ['#4F46E5', '#2563EB', '#059669', '#D97706', '#E11D48', '#7C3AED'];
 
-const Investments: React.FC<InvestmentsProps> = ({ items, onChange }) => {
+const Investments: React.FC<InvestmentsProps> = ({ items, isPrivacy = false, onChange }) => {
   const [deleteTarget, setDeleteTarget] = useState<InvestmentItem | null>(null);
 
   const addItem = () => {
@@ -76,7 +77,7 @@ const Investments: React.FC<InvestmentsProps> = ({ items, onChange }) => {
                <Briefcase size={20} className="text-indigo-400" />
                <h3 className="text-slate-500 font-black text-xs uppercase tracking-wider">Total Nilai Aset</h3>
              </div>
-             <div className="text-3xl sm:text-4xl font-black text-[var(--text-primary)] mb-6 tracking-tight">{formatRupiah(totalPortfolio)}</div>
+             <div className="text-3xl sm:text-4xl font-black text-[var(--text-primary)] mb-6 tracking-tight">{formatRupiah(totalPortfolio, isPrivacy)}</div>
              <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700">
                 <div className="flex justify-between text-[10px] font-black uppercase text-slate-500 mb-2">
                   <span>Target Progress</span>
@@ -111,7 +112,7 @@ const Investments: React.FC<InvestmentsProps> = ({ items, onChange }) => {
                       {validPieItems.map((entry, index) => <Cell key={`asset-p-${index}`} fill={entry.color} />)}
                     </Pie>
                     <Tooltip 
-                      formatter={(v:any)=>formatRupiah(v)} 
+                      formatter={(v:any)=>formatRupiah(v, isPrivacy)} 
                       contentStyle={{backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--border-main)', borderRadius: '12px'}}
                       itemStyle={{ color: 'var(--text-primary)', fontWeight: '900' }}
                       labelStyle={{ color: 'var(--text-primary)', fontWeight: '900' }}
@@ -158,10 +159,10 @@ const Investments: React.FC<InvestmentsProps> = ({ items, onChange }) => {
                     <input type="text" value={item.name} onChange={(e) => updateItem(item.id, 'name', e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-[var(--text-primary)] text-sm font-black outline-none focus:border-indigo-500" placeholder="Emas, Saham, dll" />
                   </div>
                   <div className="col-span-2 md:col-span-3">
-                    <CurrencyInput label="Saldo" value={item.currentValue} onChange={(v) => updateItem(item.id, 'currentValue', v)} />
+                    <CurrencyInput label="Saldo" value={item.currentValue} isPrivacy={isPrivacy} onChange={(v) => updateItem(item.id, 'currentValue', v)} />
                   </div>
                   <div className="col-span-2 md:col-span-3">
-                    <CurrencyInput label="Target" value={item.targetValue} onChange={(v) => updateItem(item.id, 'targetValue', v)} />
+                    <CurrencyInput label="Target" value={item.targetValue} isPrivacy={isPrivacy} onChange={(v) => updateItem(item.id, 'targetValue', v)} />
                   </div>
                   <div className="col-span-2 md:col-span-2 flex justify-between items-center pt-2">
                     <div className="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700 font-mono font-black text-indigo-600 text-[10px]">

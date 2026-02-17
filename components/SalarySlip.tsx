@@ -5,10 +5,11 @@ import { calculateOvertime, calculateBonus, calculateGrossIncome, calculateTax, 
 
 interface SalarySlipProps {
   data: SalaryData;
+  isPrivacy?: boolean;
   onChange: (data: SalaryData) => void;
 }
 
-const SalarySlip: React.FC<SalarySlipProps> = ({ data, onChange }) => {
+const SalarySlip: React.FC<SalarySlipProps> = ({ data, isPrivacy = false, onChange }) => {
   const updateField = (field: keyof SalaryData, value: number) => {
     onChange({ ...data, [field]: value });
   };
@@ -44,37 +45,43 @@ const SalarySlip: React.FC<SalarySlipProps> = ({ data, onChange }) => {
           <CurrencyInput 
             label="Gaji Pokok" 
             value={data.basicSalary} 
+            isPrivacy={isPrivacy}
             onChange={(v) => updateField('basicSalary', v)} 
           />
           <CurrencyInput 
             label="Tunjangan Perumahan" 
             value={data.housingAllowance} 
+            isPrivacy={isPrivacy}
             onChange={(v) => updateField('housingAllowance', v)} 
           />
           <CurrencyInput 
             label="Tunjangan Shift" 
             value={data.shiftAllowance} 
+            isPrivacy={isPrivacy}
             onChange={(v) => updateField('shiftAllowance', v)} 
           />
           
           <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] sm:text-xs uppercase tracking-wider text-slate-500 font-bold pl-1">Lembur (Jam)</label>
+            <label className="text-[10px] sm:text-xs uppercase tracking-wider text-slate-500 font-bold pl-1">Lembur (Jam Eqv)</label>
             <div className="relative">
               <input 
                 type="number" 
                 step="0.1"
-                value={data.overtimeHours === 0 ? '' : data.overtimeHours}
-                onChange={(e) => updateField('overtimeHours', parseFloat(e.target.value) || 0)}
-                className="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-2.5 sm:py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-right shadow-inner font-mono text-sm"
-                placeholder="0"
+                value={data.overtimeHours.toFixed(2)}
+                readOnly
+                className="w-full bg-slate-900/30 border border-slate-800 rounded-xl py-2.5 sm:py-3 px-4 text-indigo-400 font-black focus:outline-none text-right shadow-inner font-mono text-sm cursor-not-allowed"
+                title="Edit data di tab LEMBUR"
               />
             </div>
-            <p className="text-[10px] sm:text-xs text-indigo-400 text-right mt-1 font-bold uppercase">Konversi: {formatRupiah(otRupiah)}</p>
+            <div className="flex justify-between items-center mt-1">
+               <span className="text-[8px] text-slate-600 font-bold uppercase italic">*Otomatis dari tab Lembur</span>
+               <p className="text-[10px] sm:text-xs text-indigo-400 text-right font-bold uppercase">Konversi: {formatRupiah(otRupiah, isPrivacy)}</p>
+            </div>
           </div>
 
           <div className="md:col-span-2 bg-indigo-900/20 p-3 sm:p-4 rounded-xl flex justify-between items-center border border-indigo-500/20">
             <span className="text-slate-300 font-bold text-xs sm:text-sm uppercase tracking-widest">Total Rutin</span>
-            <span className="text-base sm:text-lg font-bold text-indigo-400">{formatRupiah(totalIncomeComponents)}</span>
+            <span className="text-base sm:text-lg font-bold text-indigo-400">{formatRupiah(totalIncomeComponents, isPrivacy)}</span>
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -87,23 +94,25 @@ const SalarySlip: React.FC<SalarySlipProps> = ({ data, onChange }) => {
               className="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-2.5 sm:py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-right shadow-inner font-mono text-sm"
               placeholder="Ex: 1.0"
             />
-            <p className="text-[10px] sm:text-xs text-indigo-400 text-right mt-1 font-bold uppercase">Nominal: {formatRupiah(bonusRupiah)}</p>
+            <p className="text-[10px] sm:text-xs text-indigo-400 text-right mt-1 font-bold uppercase">Nominal: {formatRupiah(bonusRupiah, isPrivacy)}</p>
           </div>
 
           <CurrencyInput 
             label="THR / Bonus Hari Raya" 
             value={data.thr} 
+            isPrivacy={isPrivacy}
             onChange={(v) => updateField('thr', v)} 
           />
           <CurrencyInput 
             label="Uang Cuti / Lainnya" 
             value={data.leavePay} 
+            isPrivacy={isPrivacy}
             onChange={(v) => updateField('leavePay', v)} 
           />
           
           <div className="md:col-span-2 mt-2 bg-slate-800/50 p-4 sm:p-5 rounded-xl flex justify-between items-center border border-slate-700/50">
             <span className="text-slate-400 font-black text-[10px] sm:text-xs uppercase tracking-[0.2em]">Gross Income (Kotor)</span>
-            <span className="text-lg sm:text-2xl font-bold text-white tracking-tight">{formatRupiah(grossIncome)}</span>
+            <span className="text-lg sm:text-2xl font-bold text-white tracking-tight">{formatRupiah(grossIncome, isPrivacy)}</span>
           </div>
         </div>
       </div>
@@ -125,18 +134,19 @@ const SalarySlip: React.FC<SalarySlipProps> = ({ data, onChange }) => {
               className="w-full bg-slate-900/50 border border-slate-700 rounded-xl py-2.5 sm:py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 text-right shadow-inner font-mono text-sm"
               placeholder="0"
             />
-            <p className="text-[10px] sm:text-xs text-rose-400 text-right mt-1 font-bold uppercase">Nominal: {formatRupiah(taxNominal)}</p>
+            <p className="text-[10px] sm:text-xs text-rose-400 text-right mt-1 font-bold uppercase">Nominal: {formatRupiah(taxNominal, isPrivacy)}</p>
           </div>
 
           <CurrencyInput 
             label="Potongan Lainnya" 
             value={data.otherDeductions} 
+            isPrivacy={isPrivacy}
             onChange={(v) => updateField('otherDeductions', v)} 
           />
 
           <div className="md:col-span-2 bg-rose-900/20 p-3 sm:p-4 rounded-xl flex justify-between items-center border border-rose-500/20">
             <span className="text-slate-300 font-bold text-xs sm:text-sm uppercase tracking-widest">Total Potongan</span>
-            <span className="text-base sm:text-lg font-bold text-rose-400">{formatRupiah(totalDeductions)}</span>
+            <span className="text-base sm:text-lg font-bold text-rose-400">{formatRupiah(totalDeductions, isPrivacy)}</span>
           </div>
         </div>
       </div>
@@ -150,7 +160,7 @@ const SalarySlip: React.FC<SalarySlipProps> = ({ data, onChange }) => {
         <div className="relative p-6 sm:p-10 text-center text-white border border-white/5">
           <h2 className="text-xs sm:text-sm font-black mb-2 sm:mb-4 uppercase tracking-[0.4em] text-indigo-200">Take Home Pay</h2>
           <div className="text-4xl sm:text-5xl md:text-7xl font-black tracking-tighter drop-shadow-lg">
-            {formatRupiah(takeHomePay)}
+            {formatRupiah(takeHomePay, isPrivacy)}
           </div>
           <p className="mt-3 sm:mt-4 text-indigo-300/80 text-[10px] sm:text-xs uppercase font-bold tracking-widest">Dana bersih tersedia untuk dikelola.</p>
         </div>

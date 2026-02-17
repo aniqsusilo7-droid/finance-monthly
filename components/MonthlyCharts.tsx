@@ -7,13 +7,14 @@ import { AlertTriangle } from 'lucide-react';
 interface MonthlyChartsProps {
   budgetData: BudgetData;
   income: number;
+  isPrivacy?: boolean;
 }
 
 const CATEGORY_COLORS: { [key: string]: string } = {
-  'Pokok': '#4F46E5',     // Indigo punchier
-  'Tabungan': '#059669',  // Emerald punchier
-  'Cicilan': '#E11D48',   // Rose punchier
-  'Lainnya': '#7C3AED',   // Violet punchier
+  'Pokok': '#4F46E5',     
+  'Tabungan': '#059669',  
+  'Cicilan': '#E11D48',   
+  'Lainnya': '#7C3AED',   
 };
 
 const EXTRA_COLORS = [
@@ -28,7 +29,7 @@ const chunkArray = (arr: any[], size: number) => {
   return chunks;
 };
 
-const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => {
+const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income, isPrivacy = false }) => {
   const categories: { name: string, Anggaran: number, Aktual: number, isOver: boolean, color: string }[] = [];
 
   const addCategory = (name: string, budget: number, actual: number, defaultColor: string) => {
@@ -72,7 +73,7 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => 
                   <span className="text-[var(--text-secondary)] text-[8px] sm:text-[9px] font-black uppercase">{entry.name}</span>
                 </div>
                 <span className={`font-mono text-[9px] font-black ${entry.name === 'Aktual' && isOver ? 'text-rose-600' : 'text-[var(--text-primary)]'}`}>
-                  {formatRupiah(entry.value)}
+                  {formatRupiah(entry.value, isPrivacy)}
                 </span>
               </div>
             ))}
@@ -105,6 +106,7 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => 
   };
 
   const yAxisFormatter = (val: number) => {
+    if (isPrivacy) return 'Rp •••';
     if (val === 0) return 'Rp 0';
     if (val >= 1000000) return `Rp ${(val / 1000000).toFixed(1)}jt`;
     return `Rp ${(val / 1000).toFixed(0)}rb`;

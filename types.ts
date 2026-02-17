@@ -3,11 +3,28 @@ export interface SalaryData {
   housingAllowance: number;
   shiftAllowance: number;
   overtimeHours: number;
-  bonusMultiplier: number; // For annual bonus calculation
+  bonusMultiplier: number;
   thr: number;
-  leavePay: number; // Uang cuti
-  taxRate: number; // Percentage
+  leavePay: number;
+  taxRate: number;
   otherDeductions: number;
+}
+
+export interface UserProfile {
+  name: string;
+  nik: string;
+  dept: string;
+  group: string;
+}
+
+export interface OvertimeEntry {
+  id: string;
+  date: string;
+  type: 'normal' | 'holiday';
+  startTime: string; // HH:mm
+  endTime: string;   // HH:mm
+  actualHours: number;
+  purpose: string;
 }
 
 export interface BudgetItem {
@@ -25,7 +42,7 @@ export interface OtherBudgetItem {
 
 export interface BudgetCategory {
   items: BudgetItem[];
-  name?: string; // Optional custom name for fixed categories
+  name?: string;
 }
 
 export interface CustomBudgetCategory extends BudgetCategory {
@@ -57,9 +74,10 @@ export interface MonthlyData {
   salary: SalaryData;
   budget: BudgetData;
   investments: InvestmentItem[];
+  overtimeEntries: OvertimeEntry[];
+  profile?: UserProfile;
 }
 
-// Global state map: key is "YYYY-MM"
 export interface AppState {
   [key: string]: MonthlyData;
 }
@@ -74,6 +92,13 @@ export const DEFAULT_SALARY: SalaryData = {
   leavePay: 0,
   taxRate: 0,
   otherDeductions: 0,
+};
+
+export const DEFAULT_PROFILE: UserProfile = {
+  name: 'ANIQ SUSILO',
+  nik: '20142101',
+  dept: 'PVC 2',
+  group: 'D5'
 };
 
 export const DEFAULT_BUDGET: BudgetData = {

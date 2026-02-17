@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { AppState, MonthlyData, DEFAULT_SALARY, DEFAULT_BUDGET } from './types';
+import { AppState, MonthlyData, DEFAULT_SALARY, DEFAULT_BUDGET, DEFAULT_PROFILE, OvertimeEntry } from './types';
+import OvertimeTracker from './components/OvertimeTracker'; 
 import SalarySlip from './components/SalarySlip';
 import Budget from './components/Budget';
 import MonthlyCharts from './components/MonthlyCharts';
@@ -7,11 +8,12 @@ import Investments from './components/Investments';
 import YearlySummary from './components/YearlySummary';
 import AIAnalysis from './components/AIAnalysis';
 import Login from './components/Login';
-import { calculateGrossIncome, calculateTax, calculateOvertime, calculateBonus } from './utils';
-import { Wallet, LayoutDashboard, PieChart, TrendingUp, Calendar, ChevronLeft, ChevronRight, Cloud, Loader2, CheckCircle2, Sparkles, Sun, Moon, LogOut } from 'lucide-react';
+import { calculateGrossIncome, calculateTax, calculateOvertime, calculateBonus, calculateEqvHours, formatRupiah } from './utils';
+import { Wallet, LayoutDashboard, PieChart, TrendingUp, Calendar, ChevronLeft, ChevronRight, Cloud, Loader2, CheckCircle2, Sparkles, Sun, Moon, LogOut, Clock, Eye, EyeOff } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const TABS = [
+  { id: 'ot', label: 'Lembur', icon: Clock },
   { id: 'salary', label: 'Gaji', icon: Wallet },
   { id: 'budget', label: 'Anggaran', icon: LayoutDashboard },
   { id: 'charts', label: 'Grafik', icon: PieChart },
@@ -22,7 +24,7 @@ const TABS = [
 
 const App: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [activeTab, setActiveTab] = useState('salary');
+  const [activeTab, setActiveTab] = useState('ot');
   const [appState, setAppState] = useState<AppState>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
@@ -34,12 +36,18 @@ const App: React.FC = () => {
     return (localStorage.getItem('app-theme') as 'dark' | 'light') || 'dark';
   });
 
+  const [isPrivacyMode, setIsPrivacyMode] = useState(() => {
+    return localStorage.getItem('privacy-mode') === 'true';
+  });
+
   const currentMonthKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
   
   const currentData: MonthlyData = appState[currentMonthKey] || {
     salary: { ...DEFAULT_SALARY },
     budget: { ...DEFAULT_BUDGET },
-    investments: []
+    investments: [],
+    overtimeEntries: [],
+    profile: { ...DEFAULT_PROFILE }
   };
 
   useEffect(() => {
@@ -47,12 +55,17 @@ const App: React.FC = () => {
     localStorage.setItem('app-theme', theme);
   }, [theme]);
 
+  useEffect(() => {
+    localStorage.setItem('privacy-mode', String(isPrivacyMode));
+  }, [isPrivacyMode]);
+
   const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  const togglePrivacy = () => setIsPrivacyMode(prev => !prev);
   
   const handleLogout = () => {
     localStorage.removeItem('is_authenticated');
     setAppState({});
-    setActiveTab('salary');
+    setActiveTab('ot');
     setCurrentDate(new Date());
     setIsAuthenticated(false);
   };
@@ -115,7 +128,11 @@ const App: React.FC = () => {
 
   const calculateCurrentIncome = (data: MonthlyData) => {
      const { salary } = data;
-     const ot = calculateOvertime(salary.basicSalary, salary.housingAllowance, salary.overtimeHours);
+     const otHours = data.overtimeEntries && data.overtimeEntries.length > 0 
+        ? data.overtimeEntries.reduce((acc, curr) => acc + calculateEqvHours(curr.actualHours, curr.type), 0)
+        : salary.overtimeHours;
+
+     const ot = calculateOvertime(salary.basicSalary, salary.housingAllowance, otHours);
      const bonus = calculateBonus(salary.basicSalary, salary.housingAllowance, salary.bonusMultiplier);
      const gross = calculateGrossIncome(salary.basicSalary, salary.housingAllowance, salary.shiftAllowance, ot, bonus, salary.thr, salary.leavePay);
      return gross - calculateTax(gross, salary.taxRate) - salary.otherDeductions;
@@ -127,9 +144,19 @@ const App: React.FC = () => {
       const existing = prev[currentMonthKey] || { 
         salary: { ...DEFAULT_SALARY }, 
         budget: { ...DEFAULT_BUDGET }, 
-        investments: [] 
+        investments: [],
+        overtimeEntries: [],
+        profile: { ...DEFAULT_PROFILE }
       };
-      return { ...prev, [currentMonthKey]: { ...existing, ...newData } };
+
+      const updated = { ...existing, ...newData };
+      
+      if (newData.overtimeEntries) {
+        const totalEqv = newData.overtimeEntries.reduce((acc, curr) => acc + calculateEqvHours(curr.actualHours, curr.type), 0);
+        updated.salary = { ...updated.salary, overtimeHours: totalEqv };
+      }
+
+      return { ...prev, [currentMonthKey]: updated };
     });
   };
 
@@ -154,13 +181,12 @@ const App: React.FC = () => {
                  <Wallet className="text-white h-5 w-5 sm:h-8 sm:w-8" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-sm sm:text-2xl font-black text-white uppercase tracking-tight leading-none truncate">ANIQ SUSILO</h1>
+                <h1 className="text-sm sm:text-2xl font-black text-white uppercase tracking-tight leading-none truncate">{currentData.profile?.name || 'ANIQ SUSILO'}</h1>
                 <p className="text-[10px] sm:text-sm font-black text-indigo-400 uppercase tracking-widest mt-0.5 truncate">FINANCE MONTHLY</p>
               </div>
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
-                {/* Save Status - Icon Only on Mobile */}
                 <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 bg-slate-800/50 rounded-lg border border-slate-700/50">
                   {saveStatus === 'saving' ? (
                     <Loader2 size={12} className="animate-spin text-indigo-400" />
@@ -174,7 +200,6 @@ const App: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Month Navigator */}
                 <div className="flex items-center bg-slate-800/80 rounded-lg sm:rounded-xl p-1 border border-slate-700 shadow-sm">
                   <button onClick={() => changeMonth(-1)} className="p-1 sm:p-2 hover:bg-slate-700 rounded-lg text-slate-400"><ChevronLeft size={14} className="sm:size-5" /></button>
                   <div className="px-1.5 sm:px-4 font-mono font-black text-indigo-400 text-[9px] sm:text-sm uppercase tracking-wider text-center min-w-[50px] sm:min-w-[100px]">
@@ -184,6 +209,13 @@ const App: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-1">
+                  <button 
+                    onClick={togglePrivacy}
+                    className={`p-1.5 sm:px-3 sm:py-2 rounded-lg border transition-colors ${isPrivacyMode ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-800/80 border-slate-700 text-slate-400'}`}
+                    title={isPrivacyMode ? 'Tampilkan Nominal' : 'Sembunyikan Nominal'}
+                  >
+                    {isPrivacyMode ? <EyeOff size={14} className="sm:size-5" /> : <Eye size={14} className="sm:size-5" />}
+                  </button>
                   <button 
                     onClick={toggleTheme}
                     className="p-1.5 sm:px-3 sm:py-2 bg-slate-800/80 rounded-lg border border-slate-700 transition-colors"
@@ -202,19 +234,25 @@ const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Content with adjusted padding for top & bottom nav */}
       <main className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-24 sm:pt-32 pb-24 sm:pb-12">
         <div className="animate-fadeIn">
-          {activeTab === 'salary' && <SalarySlip data={currentData.salary} onChange={(s) => updateCurrentData({ salary: s })} />}
-          {activeTab === 'budget' && <Budget income={currentNetIncome} data={currentData.budget} onChange={(b) => updateCurrentData({ budget: b })} />}
-          {activeTab === 'charts' && <MonthlyCharts budgetData={currentData.budget} income={currentNetIncome} />}
-          {activeTab === 'invest' && <Investments items={currentData.investments} onChange={(i) => updateCurrentData({ investments: i })} />}
-          {activeTab === 'year' && <YearlySummary appState={appState} year={currentDate.getFullYear()} />}
+          {activeTab === 'ot' && (
+            <OvertimeTracker 
+              entries={currentData.overtimeEntries || []} 
+              profile={currentData.profile || DEFAULT_PROFILE}
+              onProfileChange={(p) => updateCurrentData({ profile: p })}
+              onChange={(o) => updateCurrentData({ overtimeEntries: o })} 
+            />
+          )}
+          {activeTab === 'salary' && <SalarySlip data={currentData.salary} isPrivacy={isPrivacyMode} onChange={(s) => updateCurrentData({ salary: s })} />}
+          {activeTab === 'budget' && <Budget income={currentNetIncome} data={currentData.budget} isPrivacy={isPrivacyMode} onChange={(b) => updateCurrentData({ budget: b })} />}
+          {activeTab === 'charts' && <MonthlyCharts budgetData={currentData.budget} income={currentNetIncome} isPrivacy={isPrivacyMode} />}
+          {activeTab === 'invest' && <Investments items={currentData.investments} isPrivacy={isPrivacyMode} onChange={(i) => updateCurrentData({ investments: i })} />}
+          {activeTab === 'year' && <YearlySummary appState={appState} year={currentDate.getFullYear()} isPrivacy={isPrivacyMode} />}
           {activeTab === 'ai' && <AIAnalysis currentMonthData={currentData} netIncome={currentNetIncome} />}
         </div>
       </main>
 
-      {/* Bottom Navigation - Fixed Position for Ergonomics */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 pb-2 sm:pb-4 px-1 sm:px-6 w-full">
         <div className="max-w-7xl mx-auto glass-panel rounded-xl sm:rounded-2xl shadow-[0_-10px_30px_rgba(0,0,0,0.3)] border border-white/5 overflow-hidden">
           <div className="px-1 overflow-x-auto scrollbar-hide">

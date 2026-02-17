@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { BudgetData, BudgetItem } from '../types';
 import CurrencyInput from './ui/CurrencyInput';
@@ -9,6 +8,7 @@ import { ChevronDown, ChevronUp, Plus, Trash2, FolderPlus, X, Check, AlertTriang
 interface BudgetProps {
   income: number;
   data: BudgetData;
+  isPrivacy?: boolean;
   onChange: (data: BudgetData) => void;
 }
 
@@ -16,6 +16,7 @@ interface CategorySectionProps {
   title: string;
   items: BudgetItem[];
   colorHex: string;
+  isPrivacy: boolean;
   onUpdateItems: (items: BudgetItem[]) => void;
   onRequestDeleteCategory: () => void;
   onRequestDeleteItem: (id: string, name: string) => void;
@@ -29,6 +30,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({
   title, 
   items, 
   colorHex,
+  isPrivacy,
   onUpdateItems,
   onRequestDeleteCategory,
   onRequestDeleteItem,
@@ -114,9 +116,9 @@ const CategorySection: React.FC<CategorySectionProps> = ({
                 </div>
              </div>
              <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2.5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-500 border-t border-white/5 pt-2">
-                <span className="flex items-center gap-1.5">BUDGET: <span className="text-white">{formatRupiah(catTotalAllocated)}</span></span>
-                <span className="flex items-center gap-1.5">AKTUAL: <span className={isCatOver ? 'text-rose-400 font-black' : 'text-emerald-400'}>{formatRupiah(catTotalActual)}</span></span>
-                <span className="flex items-center gap-1.5 border-l border-white/10 pl-3">SISA: <span className={catRemaining < 0 ? 'text-rose-400' : 'text-emerald-400 font-black'}>{formatRupiah(catRemaining)}</span></span>
+                <span className="flex items-center gap-1.5">BUDGET: <span className="text-white">{formatRupiah(catTotalAllocated, isPrivacy)}</span></span>
+                <span className="flex items-center gap-1.5">AKTUAL: <span className={isCatOver ? 'text-rose-400 font-black' : 'text-emerald-400'}>{formatRupiah(catTotalActual, isPrivacy)}</span></span>
+                <span className="flex items-center gap-1.5 border-l border-white/10 pl-3">SISA: <span className={catRemaining < 0 ? 'text-rose-400' : 'text-emerald-400 font-black'}>{formatRupiah(catRemaining, isPrivacy)}</span></span>
                 <span className="flex items-center gap-1.5 border-l border-white/10 pl-3">PROGRES: <span className={isCatOver ? 'text-rose-400' : 'text-indigo-400'}>{catProgress.toFixed(0)}%</span></span>
              </div>
           </div>
@@ -150,12 +152,12 @@ const CategorySection: React.FC<CategorySectionProps> = ({
                    <input type="text" value={item.name} onChange={(e) => onUpdateItems(items.map(i => i.id === item.id ? {...i, name: e.target.value} : i))} className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white font-black outline-none focus:border-indigo-500 shadow-inner" placeholder="Nama item..." />
                  </div>
                  <div className="col-span-1 md:col-span-3">
-                   <CurrencyInput label="Budget" value={item.budget} onChange={(v) => onUpdateItems(items.map(i => i.id === item.id ? {...i, budget: v} : i))} />
+                   <CurrencyInput label="Budget" value={item.budget} isPrivacy={isPrivacy} onChange={(v) => onUpdateItems(items.map(i => i.id === item.id ? {...i, budget: v} : i))} />
                  </div>
                  <div className="col-span-1 md:col-span-3">
-                   <CurrencyInput label="Realisasi" value={item.actual} onChange={(v) => onUpdateItems(items.map(i => i.id === item.id ? {...i, actual: v} : i))} />
+                   <CurrencyInput label="Realisasi" value={item.actual} isPrivacy={isPrivacy} onChange={(v) => onUpdateItems(items.map(i => i.id === item.id ? {...i, actual: v} : i))} />
                    <div className="flex justify-between mt-1 px-1">
-                      <span className="text-[8px] font-black uppercase text-slate-500">SISA: <span className={(item.budget-item.actual) < 0 ? 'text-rose-400' : 'text-slate-400'}>{formatRupiah(item.budget-item.actual)}</span></span>
+                      <span className="text-[8px] font-black uppercase text-slate-500">SISA: <span className={(item.budget-item.actual) < 0 ? 'text-rose-400' : 'text-slate-400'}>{formatRupiah(item.budget-item.actual, isPrivacy)}</span></span>
                    </div>
                  </div>
                  <div className="col-span-2 md:col-span-1 flex justify-end">
@@ -183,7 +185,7 @@ const CategorySection: React.FC<CategorySectionProps> = ({
   );
 };
 
-const Budget: React.FC<BudgetProps> = ({ income, data, onChange }) => {
+const Budget: React.FC<BudgetProps> = ({ income, data, isPrivacy = false, onChange }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
@@ -208,8 +210,6 @@ const Budget: React.FC<BudgetProps> = ({ income, data, onChange }) => {
                     (data.others?.items?.reduce((a,b)=>a+(b.actual||0),0)||0) + 
                     (data.custom?.reduce((a,c)=>a+c.items.reduce((ia,ii)=>ia+(ii.actual||0),0),0)||0);
 
-  // Global overbudget check
-  // Fix: changed parameter type to accept items with optional budget property to support both BudgetItem and OtherBudgetItem
   const checkOver = (items: { actual: number; budget?: number }[] | undefined, limit?: number) => {
     if (limit !== undefined) {
       const act = items?.reduce((a, b) => a + (b.actual || 0), 0) || 0;
@@ -265,23 +265,22 @@ const Budget: React.FC<BudgetProps> = ({ income, data, onChange }) => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6">
         <div className="glass-panel p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border-l-4 sm:border-l-8 border-indigo-600 shadow-xl">
           <p className="text-slate-500 text-[8px] sm:text-[10px] font-black uppercase tracking-widest mb-1">Net Income</p>
-          <h3 className="text-sm sm:text-2xl font-black text-white tracking-tight">{formatRupiah(income)}</h3>
+          <h3 className="text-sm sm:text-2xl font-black text-white tracking-tight">{formatRupiah(income, isPrivacy)}</h3>
         </div>
         <div className="glass-panel p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border-l-4 sm:border-l-8 border-blue-500 shadow-xl">
           <p className="text-slate-500 text-[8px] sm:text-[10px] font-black uppercase tracking-widest mb-1">Anggaran</p>
-          <h3 className="text-sm sm:text-2xl font-black text-white tracking-tight">{formatRupiah(totalAlloc)}</h3>
+          <h3 className="text-sm sm:text-2xl font-black text-white tracking-tight">{formatRupiah(totalAlloc, isPrivacy)}</h3>
         </div>
         <div className="glass-panel p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border-l-4 sm:border-l-8 border-amber-500 shadow-xl">
           <p className="text-slate-500 text-[8px] sm:text-[10px] font-black uppercase tracking-widest mb-1">Realisasi</p>
-          <h3 className="text-sm sm:text-2xl font-black text-amber-500 tracking-tight">{formatRupiah(totalAct)}</h3>
+          <h3 className="text-sm sm:text-2xl font-black text-amber-500 tracking-tight">{formatRupiah(totalAct, isPrivacy)}</h3>
         </div>
         <div className={`glass-panel p-4 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border-l-4 sm:border-l-8 shadow-xl ${income-totalAct < 0 ? 'border-rose-600' : 'border-emerald-600'}`}>
           <p className="text-slate-500 text-[8px] sm:text-[10px] font-black uppercase tracking-widest mb-1">Sisa</p>
-          <h3 className={`text-sm sm:text-2xl font-black tracking-tight ${income-totalAct < 0 ? 'text-rose-500' : 'text-emerald-500'}`}>{formatRupiah(income-totalAct)}</h3>
+          <h3 className={`text-sm sm:text-2xl font-black tracking-tight ${income-totalAct < 0 ? 'text-rose-500' : 'text-emerald-500'}`}>{formatRupiah(income-totalAct, isPrivacy)}</h3>
         </div>
       </div>
 
-      {/* GLOBAL OVERBUDGET ALARM BANNER */}
       {isAnyOver && (
         <div className="animate-bounce-slow mt-4">
           <div className="bg-gradient-to-r from-rose-600 to-rose-800 p-4 sm:p-5 rounded-[1.5rem] border border-rose-400 shadow-[0_0_40px_rgba(244,63,94,0.4)] flex items-center justify-between gap-4">
@@ -320,17 +319,17 @@ const Budget: React.FC<BudgetProps> = ({ income, data, onChange }) => {
       </div>
 
       <div className="space-y-4">
-        {data.needs && <CategorySection title={data.needs.name || "Kebutuhan Pokok"} items={data.needs.items} colorHex={CATEGORY_COLORS.needs} onRenameCategory={(val) => handleRenameFixed('needs', val)} onRequestDeleteCategory={() => setDeleteTarget({ type: 'category', id: 'needs', name: data.needs?.name || 'Kebutuhan Pokok', categoryKey: 'needs' })} onRequestDeleteItem={(id, name) => setDeleteTarget({ type: 'item', id, name, categoryKey: 'needs' })} onUpdateItems={i => onChange({ ...data, needs: { ...data.needs, items: i } })} canDelete={true} canRename={true} />}
+        {data.needs && <CategorySection title={data.needs.name || "Kebutuhan Pokok"} items={data.needs.items} colorHex={CATEGORY_COLORS.needs} isPrivacy={isPrivacy} onRenameCategory={(val) => handleRenameFixed('needs', val)} onRequestDeleteCategory={() => setDeleteTarget({ type: 'category', id: 'needs', name: data.needs?.name || 'Kebutuhan Pokok', categoryKey: 'needs' })} onRequestDeleteItem={(id, name) => setDeleteTarget({ type: 'item', id, name, categoryKey: 'needs' })} onUpdateItems={i => onChange({ ...data, needs: { ...data.needs, items: i } })} canDelete={true} canRename={true} />}
         
-        {data.savings && <CategorySection title={data.savings.name || "Tabungan & Investasi"} items={data.savings.items} colorHex={CATEGORY_COLORS.savings} onRenameCategory={(val) => handleRenameFixed('savings', val)} onRequestDeleteCategory={() => setDeleteTarget({ type: 'category', id: 'savings', name: data.savings?.name || 'Tabungan & Investasi', categoryKey: 'savings' })} onRequestDeleteItem={(id, name) => setDeleteTarget({ type: 'item', id, name, categoryKey: 'savings' })} onUpdateItems={i => onChange({ ...data, savings: { ...data.savings, items: i } })} canDelete={true} canRename={true} />}
+        {data.savings && <CategorySection title={data.savings.name || "Tabungan & Investasi"} items={data.savings.items} colorHex={CATEGORY_COLORS.savings} isPrivacy={isPrivacy} onRenameCategory={(val) => handleRenameFixed('savings', val)} onRequestDeleteCategory={() => setDeleteTarget({ type: 'category', id: 'savings', name: data.savings?.name || 'Tabungan & Investasi', categoryKey: 'savings' })} onRequestDeleteItem={(id, name) => setDeleteTarget({ type: 'item', id, name, categoryKey: 'savings' })} onUpdateItems={i => onChange({ ...data, savings: { ...data.savings, items: i } })} canDelete={true} canRename={true} />}
         
-        {data.debt && <CategorySection title={data.debt.name || "Hutang & Cicilan"} items={data.debt.items} colorHex={CATEGORY_COLORS.debt} onRenameCategory={(val) => handleRenameFixed('debt', val)} onRequestDeleteCategory={() => setDeleteTarget({ type: 'category', id: 'debt', name: data.debt?.name || 'Hutang & Cicilan', categoryKey: 'debt' })} onRequestDeleteItem={(id, name) => setDeleteTarget({ type: 'item', id, name, categoryKey: 'debt' })} onUpdateItems={i => onChange({ ...data, debt: { ...data.debt, items: i } })} canDelete={true} canRename={true} />}
+        {data.debt && <CategorySection title={data.debt.name || "Hutang & Cicilan"} items={data.debt.items} colorHex={CATEGORY_COLORS.debt} isPrivacy={isPrivacy} onRenameCategory={(val) => handleRenameFixed('debt', val)} onRequestDeleteCategory={() => setDeleteTarget({ type: 'category', id: 'debt', name: data.debt?.name || 'Hutang & Cicilan', categoryKey: 'debt' })} onRequestDeleteItem={(id, name) => setDeleteTarget({ type: 'item', id, name, categoryKey: 'debt' })} onUpdateItems={i => onChange({ ...data, debt: { ...data.debt, items: i } })} canDelete={true} canRename={true} />}
         
         {(data.custom||[]).map((cat, idx) => (
-          <CategorySection key={cat.id} title={cat.name} items={cat.items} colorHex={CATEGORY_COLORS.extra[idx % CATEGORY_COLORS.extra.length]} onRenameCategory={(newTitle) => onChange({...data, custom: data.custom!.map(c => c.id === cat.id ? {...c, name: newTitle} : c)})} onRequestDeleteCategory={() => setDeleteTarget({ type: 'category', id: cat.id, name: cat.name, categoryKey: 'custom' })} onRequestDeleteItem={(id, name) => setDeleteTarget({ type: 'item', id, name, categoryKey: cat.id })} onUpdateItems={i => onChange({ ...data, custom: data.custom!.map(c => c.id === cat.id ? { ...c, items: i } : c) })} />
+          <CategorySection key={cat.id} title={cat.name} items={cat.items} colorHex={CATEGORY_COLORS.extra[idx % CATEGORY_COLORS.extra.length]} isPrivacy={isPrivacy} onRenameCategory={(newTitle) => onChange({...data, custom: data.custom!.map(c => c.id === cat.id ? {...c, name: newTitle} : c)})} onRequestDeleteCategory={() => setDeleteTarget({ type: 'category', id: cat.id, name: cat.name, categoryKey: 'custom' })} onRequestDeleteItem={(id, name) => setDeleteTarget({ type: 'item', id, name, categoryKey: cat.id })} onUpdateItems={i => onChange({ ...data, custom: data.custom!.map(c => c.id === cat.id ? { ...c, items: i } : c) })} />
         ))}
 
-        {data.others && <OthersSection data={data.others} onUpdate={o=>onChange({...data, others: o})} onRequestDelete={()=>setDeleteTarget({ type: 'category', id: 'others', name: 'Lain-lain', categoryKey: 'others' })} onRequestDeleteItem={(id, name) => setDeleteTarget({ type: 'item', id, name, categoryKey: 'others-items' })} />}
+        {data.others && <OthersSection data={data.others} isPrivacy={isPrivacy} onUpdate={o=>onChange({...data, others: o})} onRequestDelete={()=>setDeleteTarget({ type: 'category', id: 'others', name: 'Lain-lain', categoryKey: 'others' })} onRequestDeleteItem={(id, name) => setDeleteTarget({ type: 'item', id, name, categoryKey: 'others-items' })} />}
       </div>
 
       <DeleteModal isOpen={!!deleteTarget} title={deleteTarget?.type === 'category' ? 'Hapus Kategori' : 'Hapus Item'} itemName={deleteTarget?.name || ''} onClose={() => setDeleteTarget(null)} onConfirm={confirmDelete} />
@@ -338,7 +337,7 @@ const Budget: React.FC<BudgetProps> = ({ income, data, onChange }) => {
   );
 };
 
-const OthersSection: React.FC<{data: any, onUpdate: (d: any)=>void, onRequestDelete: ()=>void, onRequestDeleteItem: (id: string, name: string) => void}> = ({data, onUpdate, onRequestDelete, onRequestDeleteItem}) => {
+const OthersSection: React.FC<{data: any, isPrivacy: boolean, onUpdate: (d: any)=>void, onRequestDelete: ()=>void, onRequestDeleteItem: (id: string, name: string) => void}> = ({data, isPrivacy, onUpdate, onRequestDelete, onRequestDeleteItem}) => {
   const [expanded, setExpanded] = useState(false);
   const totalAct = data.items?.reduce((a:any, b:any)=>a+(b.actual||0), 0) || 0;
   const totalAlloc = data.allocation || 0;
@@ -369,9 +368,9 @@ const OthersSection: React.FC<{data: any, onUpdate: (d: any)=>void, onRequestDel
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2.5 text-[9px] sm:text-[10px] font-black uppercase text-slate-500 tracking-widest pt-2 border-t border-white/5">
-                  <span>LIMIT: <span className="text-white">{formatRupiah(totalAlloc)}</span></span>
-                  <span>AKTUAL: <span className={isOver ? 'text-rose-400' : 'text-violet-400'}>{formatRupiah(totalAct)}</span></span>
-                  <span className="border-l border-white/10 pl-3">SISA: <span className={remaining < 0 ? 'text-rose-400' : 'text-emerald-400 font-black'}>{formatRupiah(remaining)}</span></span>
+                  <span>LIMIT: <span className="text-white">{formatRupiah(totalAlloc, isPrivacy)}</span></span>
+                  <span>AKTUAL: <span className={isOver ? 'text-rose-400' : 'text-violet-400'}>{formatRupiah(totalAct, isPrivacy)}</span></span>
+                  <span className="border-l border-white/10 pl-3">SISA: <span className={remaining < 0 ? 'text-rose-400' : 'text-emerald-400 font-black'}>{formatRupiah(remaining, isPrivacy)}</span></span>
                   <span className="border-l border-white/10 pl-3">PROGRES: <span className={isOver ? 'text-rose-400' : 'text-indigo-400'}>{progress.toFixed(0)}%</span></span>
                 </div>
            </div>
@@ -382,7 +381,7 @@ const OthersSection: React.FC<{data: any, onUpdate: (d: any)=>void, onRequestDel
       </div>
       {expanded && (
         <div className="p-4 sm:p-8 bg-slate-950/40 space-y-6 animate-fadeIn">
-           <CurrencyInput label="Limit Anggaran Hiburan" value={data.allocation} onChange={v=>onUpdate({...data, allocation: v})} />
+           <CurrencyInput label="Limit Anggaran Hiburan" value={data.allocation} isPrivacy={isPrivacy} onChange={v=>onUpdate({...data, allocation: v})} />
            <div className="space-y-4 pt-4 border-t border-white/5">
              {(data.items || []).map((item:any) => (
                <div key={item.id} className="grid grid-cols-2 md:grid-cols-12 gap-3 sm:gap-4 p-4 bg-slate-900/60 rounded-2xl border border-white/5 items-end">
@@ -391,7 +390,7 @@ const OthersSection: React.FC<{data: any, onUpdate: (d: any)=>void, onRequestDel
                    <input value={item.name} onChange={e=>onUpdate({...data, items: data.items.map((i:any)=>i.id===item.id?{...i, name: e.target.value}:i)})} className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-sm text-white font-black outline-none focus:border-indigo-500 shadow-inner" placeholder="Misal: Bioskop..." />
                  </div>
                  <div className="col-span-1 md:col-span-4">
-                   <CurrencyInput label="Nominal" value={item.actual} onChange={v=>onUpdate({...data, items: data.items.map((i:any)=>i.id===item.id?{...i, actual: v}:i)})} />
+                   <CurrencyInput label="Nominal" value={item.actual} isPrivacy={isPrivacy} onChange={v=>onUpdate({...data, items: data.items.map((i:any)=>i.id===item.id?{...i, actual: v}:i)})} />
                  </div>
                  <div className="col-span-1 md:col-span-1 flex justify-end">
                    <button type="button" onClick={()=>onRequestDeleteItem(item.id, item.name)} className="p-3 text-slate-600 hover:text-rose-500"><Trash2 size={20} /></button>

@@ -6,9 +6,10 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 interface YearlySummaryProps {
   appState: AppState;
   year: number;
+  isPrivacy?: boolean;
 }
 
-const YearlySummary: React.FC<YearlySummaryProps> = ({ appState, year }) => {
+const YearlySummary: React.FC<YearlySummaryProps> = ({ appState, year, isPrivacy = false }) => {
   const summaryData = useMemo(() => {
     const months = Array.from({ length: 12 }, (_, i) => {
       const monthNum = i + 1;
@@ -72,10 +73,10 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ appState, year }) => {
         <div className="bg-[var(--tooltip-bg)] border border-slate-700/20 p-4 rounded-xl shadow-2xl">
           <p className="font-black text-[var(--text-primary)] mb-2 uppercase tracking-widest border-b border-slate-700/10 pb-2">{label} {year}</p>
           <div className="space-y-1">
-             <p className="text-emerald-600 text-sm font-black uppercase">Income: {formatRupiah(payload[0].value)}</p>
-             <p className="text-rose-600 text-sm font-black uppercase">Expense: {formatRupiah(payload[1].value)}</p>
+             <p className="text-emerald-600 text-sm font-black uppercase">Income: {formatRupiah(payload[0].value, isPrivacy)}</p>
+             <p className="text-rose-600 text-sm font-black uppercase">Expense: {formatRupiah(payload[1].value, isPrivacy)}</p>
              <div className="border-t border-slate-700/10 pt-1 mt-1">
-                <p className="text-indigo-600 text-sm font-black uppercase">Profit: {formatRupiah(payload[0].value - payload[1].value)}</p>
+                <p className="text-indigo-600 text-sm font-black uppercase">Profit: {formatRupiah(payload[0].value - payload[1].value, isPrivacy)}</p>
              </div>
           </div>
         </div>
@@ -89,15 +90,15 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ appState, year }) => {
        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="glass-panel p-6 rounded-2xl relative overflow-hidden group border-l-4 border-emerald-500">
             <h4 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Total Pendapatan {year}</h4>
-            <div className="text-3xl font-black text-[var(--text-primary)] tracking-tight">{formatRupiah(totalIncome)}</div>
+            <div className="text-3xl font-black text-[var(--text-primary)] tracking-tight">{formatRupiah(totalIncome, isPrivacy)}</div>
           </div>
           <div className="glass-panel p-6 rounded-2xl relative overflow-hidden border-l-4 border-rose-500">
             <h4 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Total Pengeluaran {year}</h4>
-            <div className="text-3xl font-black text-rose-600 tracking-tight">{formatRupiah(totalExpense)}</div>
+            <div className="text-3xl font-black text-rose-600 tracking-tight">{formatRupiah(totalExpense, isPrivacy)}</div>
           </div>
           <div className="glass-panel p-6 rounded-2xl relative overflow-hidden border-l-4 border-indigo-500">
             <h4 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Net Profit {year}</h4>
-            <div className={`text-3xl font-black tracking-tight ${netProfit >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>{formatRupiah(netProfit)}</div>
+            <div className={`text-3xl font-black tracking-tight ${netProfit >= 0 ? 'text-indigo-600' : 'text-rose-600'}`}>{formatRupiah(netProfit, isPrivacy)}</div>
           </div>
        </div>
 
@@ -120,7 +121,7 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ appState, year }) => {
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="month" stroke="var(--chart-label)" fontSize={10} tickLine={false} axisLine={false} tick={{fontWeight: 900, fill: 'var(--chart-label)'}} />
-                <YAxis stroke="var(--chart-label)" fontSize={10} tickFormatter={(val) => `${(val/1000000).toFixed(0)}jt`} tickLine={false} axisLine={false} tick={{fontWeight: 900, fill: 'var(--chart-label)'}} width={50} />
+                <YAxis stroke="var(--chart-label)" fontSize={10} tickFormatter={(val) => isPrivacy ? '•••' : `${(val/1000000).toFixed(0)}jt`} tickLine={false} axisLine={false} tick={{fontWeight: 900, fill: 'var(--chart-label)'}} width={50} />
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} opacity={0.5} />
                 <Tooltip content={<CustomTooltip />} />
                 <Area type="monotone" dataKey="income" stroke="#059669" strokeWidth={4} fillOpacity={1} fill="url(#colorIncome)" />
@@ -148,8 +149,8 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ appState, year }) => {
                {summaryData.map((row) => (
                  <tr key={row.month} className="hover:bg-white/5 transition-colors group">
                    <td className="px-6 py-4 font-black text-[var(--text-primary)] uppercase">{row.month}</td>
-                   <td className="px-6 py-4 text-right text-emerald-600 font-mono font-black">{formatRupiah(row.income)}</td>
-                   <td className="px-6 py-4 text-right text-rose-600 font-mono font-black">{formatRupiah(row.expense)}</td>
+                   <td className="px-6 py-4 text-right text-emerald-600 font-mono font-black">{formatRupiah(row.income, isPrivacy)}</td>
+                   <td className="px-6 py-4 text-right text-rose-600 font-mono font-black">{formatRupiah(row.expense, isPrivacy)}</td>
                    <td className="px-6 py-4 text-right">
                       <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase ${row.margin > 20 ? 'bg-emerald-600/20 text-emerald-700 border border-emerald-500/20' : row.margin > 0 ? 'bg-amber-600/20 text-amber-700 border border-amber-500/20' : 'bg-rose-600/20 text-rose-700 border border-rose-500/20'}`}>
                         {row.margin.toFixed(1)}%
