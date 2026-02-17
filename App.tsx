@@ -182,7 +182,7 @@ const App: React.FC = () => {
               </div>
               <div className="min-w-0">
                 <h1 className="text-sm sm:text-2xl font-black text-white uppercase tracking-tight leading-none truncate">{currentData.profile?.name || 'ANIQ SUSILO'}</h1>
-                <p className="text-[10px] sm:text-sm font-black text-indigo-400 uppercase tracking-widest mt-0.5 truncate">FINANCE MONTHLY</p>
+                <p className="text-[10px] sm:text-sm font-black text-indigo-400 uppercase tracking-widest mt-0.5 whitespace-nowrap">FINANCE MONTHLY</p>
               </div>
             </div>
 
