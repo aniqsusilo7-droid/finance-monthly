@@ -19,7 +19,7 @@ const DeleteModal: React.FC<DeleteModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-slate-950/80 backdrop-blur-md animate-fadeIn"
@@ -27,8 +27,9 @@ const DeleteModal: React.FC<DeleteModalProps> = ({
       />
       
       {/* Modal Card */}
-      <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-fadeIn">
-        <div className="p-6 sm:p-8 text-center">
+      <div className="relative w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl animate-fadeIn flex flex-col max-h-[90vh]">
+        
+        <div className="overflow-y-auto p-6 sm:p-8 text-center custom-scrollbar">
           <div className="flex flex-col items-center mb-6">
             <div className="bg-rose-500/10 p-4 rounded-full mb-4 animate-pulse">
               <AlertTriangle className="text-rose-500 w-10 h-10" />
@@ -42,28 +43,28 @@ const DeleteModal: React.FC<DeleteModalProps> = ({
             <p className="text-white font-black text-lg break-words leading-tight">"{itemName}"</p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 py-4 bg-slate-800 text-slate-300 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-700 transition-all order-2 sm:order-1"
-            >
-              Tidak, Batal
-            </button>
+          <div className="flex flex-col gap-3">
             <button
               onClick={() => {
                 onConfirm();
                 onClose();
               }}
-              className="flex-1 py-4 bg-rose-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-900/40 order-1 sm:order-2"
+              className="w-full py-4 bg-rose-600 text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-900/40"
             >
               Ya, Hapus
+            </button>
+            <button
+              onClick={onClose}
+              className="w-full py-4 bg-slate-800 text-slate-300 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-700 transition-all"
+            >
+              Batal
             </button>
           </div>
         </div>
         
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors p-2"
+          className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors p-2 bg-slate-900/50 rounded-full"
         >
           <X size={20} />
         </button>

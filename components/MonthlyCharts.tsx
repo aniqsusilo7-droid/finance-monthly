@@ -147,7 +147,7 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => 
         
         <div className="space-y-10">
           {categoryChunks.map((chunk, chunkIdx) => (
-            <div key={chunkIdx} className="h-[250px] sm:h-[350px] w-full border-b border-slate-800/30 pb-4 last:border-0 last:pb-0">
+            <div key={chunkIdx} className="h-[320px] sm:h-[400px] w-full border-b border-slate-800/30 pb-4 last:border-0 last:pb-0">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chunk} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                   <defs>
@@ -168,7 +168,7 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => 
                   <XAxis 
                     dataKey="name" 
                     stroke="var(--chart-label)" 
-                    fontSize={9} 
+                    fontSize={10} 
                     tickLine={false} 
                     axisLine={false} 
                     tick={{fontWeight: 900, fill: 'var(--chart-label)'}} 
@@ -176,7 +176,7 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => 
                   />
                   <YAxis 
                     stroke="var(--chart-label)" 
-                    fontSize={9} 
+                    fontSize={10} 
                     width={60} 
                     tickFormatter={yAxisFormatter} 
                     tickLine={false} 
@@ -203,14 +203,14 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="glass-panel p-6 sm:p-8 rounded-[2rem] border border-white/10 flex flex-col items-center">
            <h3 className="w-full text-xs font-black text-[var(--text-primary)] uppercase tracking-widest mb-6 border-b border-slate-700/10 pb-2">Rencana Alokasi (%)</h3>
-           <div className="h-[280px] w-full">
+           <div className="h-[320px] w-full">
              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie 
                     data={categories.filter(c => c.Anggaran > 0)} 
                     cx="50%" cy="50%" 
-                    innerRadius={50} 
-                    outerRadius={80} 
+                    innerRadius={55} 
+                    outerRadius={90} 
                     dataKey="Anggaran" 
                     stroke="var(--bg-app)" 
                     strokeWidth={4} 
@@ -231,14 +231,14 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income }) => 
 
         <div className="glass-panel p-6 sm:p-8 rounded-[2rem] border border-white/10 flex flex-col items-center">
            <h3 className="w-full text-xs font-black text-[var(--text-primary)] uppercase tracking-widest mb-6 border-b border-slate-700/10 pb-2">Realisasi Pengeluaran (%)</h3>
-           <div className="h-[280px] w-full">
+           <div className="h-[320px] w-full">
              <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie 
                     data={categories.filter(c => c.Aktual > 0)} 
                     cx="50%" cy="50%" 
-                    innerRadius={50} 
-                    outerRadius={80} 
+                    innerRadius={55} 
+                    outerRadius={90} 
                     dataKey="Aktual" 
                     stroke="var(--bg-app)" 
                     strokeWidth={4} 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, User, Eye, EyeOff, ShieldCheck, RefreshCw, ArrowLeft, KeyRound, Loader2 } from 'lucide-react';
+import { Lock, User, Eye, EyeOff, Wallet, RefreshCw, ArrowLeft, KeyRound, Loader2 } from 'lucide-react';
 
 interface LoginProps {
   onAuthenticated: () => void;
@@ -69,17 +69,19 @@ const Login: React.FC<LoginProps> = ({ onAuthenticated }) => {
         <div className="glass-panel p-6 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden text-white">
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-600/20 rounded-full blur-3xl"></div>
           
-          <div className="relative z-10 text-center mb-6 sm:mb-8">
-            <div className="inline-flex p-3 sm:p-4 rounded-2xl sm:rounded-3xl bg-indigo-600 shadow-xl mb-4 sm:mb-6 shadow-indigo-900/40">
-              <ShieldCheck className="text-white w-6 h-6 sm:w-8 sm:h-8" />
+          <div className="relative z-10 flex flex-col items-center mb-6 sm:mb-8">
+            {/* Logo Section Matching Dashboard */}
+            <div className="flex items-center gap-3 sm:gap-4 mb-6">
+              <div className="bg-indigo-600 p-2 sm:p-3 rounded-xl shadow-lg shadow-indigo-900/40 shrink-0">
+                <Wallet className="text-white w-6 h-6 sm:w-8 sm:h-8" />
+              </div>
+              <div className="text-left">
+                <h1 className="text-lg sm:text-2xl font-black text-white uppercase tracking-tight leading-none">ANIQ SUSILO</h1>
+                <p className="text-[10px] sm:text-sm font-black text-indigo-400 uppercase tracking-widest mt-0.5">FINANCE MONTHLY</p>
+              </div>
             </div>
-            {/* Judul diselaraskan dengan Dashboard sesuai instruksi */}
-            <div className="space-y-1">
-              <h1 className="text-lg sm:text-2xl font-black text-white uppercase tracking-tighter leading-tight">
-                ANIQ SUSILO - FINANCE MONTHLY
-              </h1>
-            </div>
-            <div className="mt-4 pt-4 border-t border-white/5">
+
+            <div className="w-full pt-4 border-t border-white/5 text-center">
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
                 {isForgot ? 'Reset Akses' : isSignUp ? 'Daftar Akun' : 'Masuk Dashboard'}
               </p>
