@@ -76,8 +76,8 @@ const Login: React.FC<LoginProps> = ({ onAuthenticated }) => {
                 <Wallet className="text-white w-6 h-6 sm:w-8 sm:h-8" />
               </div>
               <div className="text-left">
-                <h1 className="text-lg sm:text-2xl font-black text-white uppercase tracking-tight leading-none">ANIQ SUSILO</h1>
-                <p className="text-[10px] sm:text-sm font-black text-indigo-400 uppercase tracking-widest mt-0.5">FINANCE MONTHLY</p>
+                <h1 className="text-lg sm:text-2xl font-black text-white uppercase tracking-tight leading-none">MY FINANCE</h1>
+                <p className="text-[10px] sm:text-sm font-black text-indigo-400 uppercase tracking-widest mt-0.5">TRACKER MONTHLY</p>
               </div>
             </div>
 

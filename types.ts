@@ -95,10 +95,10 @@ export const DEFAULT_SALARY: SalaryData = {
 };
 
 export const DEFAULT_PROFILE: UserProfile = {
-  name: 'ANIQ SUSILO',
-  nik: '20142101',
-  dept: 'PVC 2',
-  group: 'D5'
+  name: '',
+  nik: '',
+  dept: '',
+  group: ''
 };
 
 export const DEFAULT_BUDGET: BudgetData = {

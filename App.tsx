@@ -9,7 +9,7 @@ import YearlySummary from './components/YearlySummary';
 import AIAnalysis from './components/AIAnalysis';
 import Login from './components/Login';
 import { calculateGrossIncome, calculateTax, calculateOvertime, calculateBonus, calculateEqvHours, formatRupiah } from './utils';
-import { Wallet, LayoutDashboard, PieChart, TrendingUp, Calendar, ChevronLeft, ChevronRight, Cloud, Loader2, CheckCircle2, Sparkles, Sun, Moon, LogOut, Clock, Eye, EyeOff } from 'lucide-react';
+import { Wallet, LayoutDashboard, PieChart, TrendingUp, Calendar, ChevronLeft, ChevronRight, Cloud, Loader2, CheckCircle2, Sparkles, Sun, Moon, LogOut, Clock, Eye, EyeOff, Copy } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const TABS = [
@@ -166,6 +166,41 @@ const App: React.FC = () => {
     setCurrentDate(newDate);
   };
 
+  const copyFromPreviousMonth = () => {
+    const prevDate = new Date(currentDate);
+    prevDate.setMonth(currentDate.getMonth() - 1);
+    const prevMonthKey = `${prevDate.getFullYear()}-${String(prevDate.getMonth() + 1).padStart(2, '0')}`;
+    
+    const prevData = appState[prevMonthKey];
+    if (prevData) {
+      // Copy everything except overtime entries
+      const newData: MonthlyData = {
+        ...currentData,
+        salary: { ...prevData.salary, overtimeHours: 0 },
+        budget: JSON.parse(JSON.stringify(prevData.budget)),
+        investments: JSON.parse(JSON.stringify(prevData.investments)),
+        profile: prevData.profile ? { ...prevData.profile } : currentData.profile,
+        overtimeEntries: []
+      };
+      
+      // Reset actual values in budget to 0 for the new month
+      if (newData.budget.needs) newData.budget.needs.items = newData.budget.needs.items.map(i => ({ ...i, actual: 0 }));
+      if (newData.budget.savings) newData.budget.savings.items = newData.budget.savings.items.map(i => ({ ...i, actual: 0 }));
+      if (newData.budget.debt) newData.budget.debt.items = newData.budget.debt.items.map(i => ({ ...i, actual: 0 }));
+      if (newData.budget.others) newData.budget.others.items = newData.budget.others.items.map(i => ({ ...i, actual: 0 }));
+      if (newData.budget.custom) {
+        newData.budget.custom = newData.budget.custom.map(cat => ({
+          ...cat,
+          items: cat.items.map(i => ({ ...i, actual: 0 }))
+        }));
+      }
+
+      updateCurrentData(newData);
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    }
+  };
+
   if (!isAuthenticated) {
     return <Login onAuthenticated={() => setIsAuthenticated(true)} />;
   }
@@ -207,6 +242,15 @@ const App: React.FC = () => {
                   </div>
                   <button onClick={() => changeMonth(1)} className="p-1 sm:p-2 hover:bg-slate-700 rounded-lg text-slate-400"><ChevronRight size={14} className="sm:size-5" /></button>
                 </div>
+
+                <button 
+                  onClick={copyFromPreviousMonth}
+                  className="p-1.5 sm:px-3 sm:py-2 bg-slate-800/80 rounded-lg border border-slate-700 text-indigo-400 hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-1 sm:gap-2"
+                  title="Salin data dari bulan sebelumnya"
+                >
+                  <Copy size={14} className="sm:size-5" />
+                  <span className="hidden sm:inline text-[10px] uppercase tracking-tighter">Salin</span>
+                </button>
 
                 <div className="flex items-center gap-1">
                   <button 

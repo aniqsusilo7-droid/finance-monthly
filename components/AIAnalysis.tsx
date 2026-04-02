@@ -85,22 +85,23 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) 
     }
 
     // 2. Resolusi API Key (Prioritas: Env -> LocalStorage -> AI Studio)
-    let apiKey = process.env.API_KEY;
+    let apiKey = (process.env.GEMINI_API_KEY || process.env.API_KEY) as string;
     
     // Jika env kosong, gunakan saved key dari localStorage
-    if (!apiKey || apiKey.trim() === "") {
+    if (!apiKey || apiKey.trim() === "" || apiKey === "undefined") {
         apiKey = savedKey || "";
     }
 
     // Jika masih kosong, cek flow AI Studio atau minta input
-    if (!apiKey || apiKey.trim() === "") {
+    if (!apiKey || apiKey.trim() === "" || apiKey === "undefined") {
       if ((window as any).aistudio) {
-        // Cek apakah user sudah select key di AI Studio tapi belum ter-inject (jarang terjadi di flow ini)
+        // Cek apakah user sudah select key di AI Studio tapi belum ter-inject
         if (!isKeySelected) {
            setError("API Key belum dipilih. Klik tombol 'Pilih API Key' di bawah.");
            return;
         }
-        // Jika isKeySelected true tapi process.env.API_KEY masih kosong, mungkin perlu refresh atau environment issue
+        // Jika isKeySelected true tapi apiKey masih kosong, kita tetap butuh key.
+        // Biasanya AI Studio akan meng-inject ke process.env.API_KEY setelah refresh.
       } else {
         // Lingkungan standar (Smartphone/Browser biasa)
         setShowKeyInput(true);

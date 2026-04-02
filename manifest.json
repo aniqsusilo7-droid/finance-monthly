@@ -1,6 +1,6 @@
 {
-  "name": "ANIQ SUSILO - FINANCE MONTHLY",
-  "short_name": "Monthly Finance",
+  "name": "MONTHLY FINANCE TRACKER",
+  "short_name": "Finance Tracker",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F8FAFC",
