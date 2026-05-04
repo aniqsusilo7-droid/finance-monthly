@@ -3,7 +3,7 @@ import { BudgetData, BudgetItem } from '../types';
 import CurrencyInput from './ui/CurrencyInput';
 import DeleteModal from './ui/DeleteModal';
 import { formatRupiah } from '../utils';
-import { ChevronDown, ChevronUp, Plus, Trash2, FolderPlus, X, Check, AlertTriangle, Pencil, BellRing, OctagonAlert } from 'lucide-react';
+import { ChevronDown, ChevronUp, Plus, Trash2, FolderPlus, X, Check, AlertTriangle, Pencil, BellRing, OctagonAlert, RefreshCw } from 'lucide-react';
 
 interface BudgetProps {
   income: number;
@@ -229,29 +229,54 @@ const Budget: React.FC<BudgetProps> = ({ income, data, isPrivacy = false, onChan
 
   const confirmDelete = () => {
     if (!deleteTarget) return;
+    
+    const newData = { ...data };
+    
     if (deleteTarget.type === 'category') {
       const { categoryKey, id } = deleteTarget;
       if (categoryKey === 'custom') {
-        onChange({ ...data, custom: (data.custom || []).filter(c => c.id !== id) });
-      } else {
-        const newData = { ...data };
-        delete (newData as any)[categoryKey];
-        onChange(newData);
+        newData.custom = (data.custom || []).filter(c => c.id !== id);
+      } else if (categoryKey === 'needs') {
+        newData.needs = undefined;
+      } else if (categoryKey === 'savings') {
+        newData.savings = undefined;
+      } else if (categoryKey === 'debt') {
+        newData.debt = undefined;
+      } else if (categoryKey === 'others') {
+        newData.others = undefined;
       }
+      onChange(newData);
     } else {
       const { categoryKey, id } = deleteTarget;
       if (['needs', 'savings', 'debt'].includes(categoryKey)) {
         const cat = (data as any)[categoryKey];
-        onChange({ ...data, [categoryKey]: { ...cat, items: cat.items.filter((i:any) => i.id !== id) } });
+        if (cat) {
+          onChange({ ...data, [categoryKey]: { ...cat, items: cat.items.filter((i:any) => i.id !== id) } });
+        }
       } else if (categoryKey === 'others-items') {
-        onChange({ ...data, others: { ...data.others!, items: data.others!.items.filter(i => i.id !== id) } });
+        if (data.others) {
+          onChange({ ...data, others: { ...data.others, items: data.others.items.filter(i => i.id !== id) } });
+        }
       } else {
-        const updatedCustom = (data.custom || []).map(cat => cat.id === categoryKey ? { ...cat, items: cat.items.filter(i => i.id !== id) } : cat);
+        const updatedCustom = (data.custom || []).map(cat => 
+          cat.id === categoryKey ? { ...cat, items: cat.items.filter(i => i.id !== id) } : cat
+        );
         onChange({ ...data, custom: updatedCustom });
       }
     }
     setDeleteTarget(null);
   };
+
+  const restoreDefaults = () => {
+    const newData = { ...data };
+    if (!newData.needs) newData.needs = { items: [], name: 'Kebutuhan Pokok' };
+    if (!newData.savings) newData.savings = { items: [], name: 'Tabungan & Investasi' };
+    if (!newData.debt) newData.debt = { items: [], name: 'Hutang & Cicilan' };
+    if (!newData.others) newData.others = { allocation: 0, items: [] };
+    onChange(newData);
+  };
+
+  const hasMissingDefaults = !data.needs || !data.savings || !data.debt || !data.others;
 
   const handleRenameFixed = (key: 'needs' | 'savings' | 'debt', newName: string) => {
     const section = data[key];
@@ -305,17 +330,27 @@ const Budget: React.FC<BudgetProps> = ({ income, data, isPrivacy = false, onChan
             <div className="w-2 h-6 sm:h-8 bg-indigo-600 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div> 
             ALOKASI ANGGARAN
          </h2>
-         {!isAdding ? (
-           <button onClick={() => setIsAdding(true)} className="w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 bg-indigo-600 text-white rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-black flex items-center justify-center gap-3 uppercase tracking-widest transition-all hover:bg-indigo-700 shadow-lg">
-             <FolderPlus size={16} /> TAMBAH KATEGORI
-           </button>
-         ) : (
-           <div className="flex items-center gap-2 bg-slate-900 p-2 rounded-xl border border-slate-700 w-full sm:w-auto">
-             <input autoFocus value={newName} onChange={e=>setNewName(e.target.value)} onKeyDown={e=>e.key==='Enter' && (()=>{if(newName.trim()){onChange({...data, custom: [...(data.custom||[]), {id: Date.now().toString(), name: newName.trim(), items: []}]}); setNewName(''); setIsAdding(false);}})()} placeholder="Nama Kategori..." className="bg-transparent border-none outline-none text-white font-black text-sm uppercase px-2 w-40 sm:w-64" />
-             <button onClick={()=>{if(newName.trim()){onChange({...data, custom: [...(data.custom||[]), {id: Date.now().toString(), name: newName.trim(), items: []}]}); setNewName(''); setIsAdding(false);}}} className="p-2 bg-indigo-600 text-white rounded-lg"><Check size={18}/></button>
-             <button onClick={()=>setIsAdding(false)} className="p-2 bg-slate-800 text-slate-400 rounded-lg"><X size={18}/></button>
-           </div>
-         )}
+         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+           {hasMissingDefaults && (
+             <button 
+               onClick={restoreDefaults} 
+               className="px-6 py-3 sm:px-8 sm:py-4 bg-slate-800/80 text-slate-400 border border-slate-700 rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-black flex items-center justify-center gap-3 uppercase tracking-widest transition-all hover:text-white hover:border-slate-500 shadow-lg"
+             >
+               <RefreshCw size={16} /> RESET KATEGORI
+             </button>
+           )}
+           {!isAdding ? (
+             <button onClick={() => setIsAdding(true)} className="px-6 py-3 sm:px-8 sm:py-4 bg-indigo-600 text-white rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-black flex items-center justify-center gap-3 uppercase tracking-widest transition-all hover:bg-indigo-700 shadow-lg">
+               <FolderPlus size={16} /> TAMBAH KATEGORI
+             </button>
+           ) : (
+             <div className="flex items-center gap-2 bg-slate-900 p-2 rounded-xl border border-slate-700 w-full sm:w-auto">
+               <input autoFocus value={newName} onChange={e=>setNewName(e.target.value)} onKeyDown={e=>e.key==='Enter' && (()=>{if(newName.trim()){onChange({...data, custom: [...(data.custom||[]), {id: Date.now().toString(), name: newName.trim(), items: []}]}); setNewName(''); setIsAdding(false);}})()} placeholder="Nama Kategori..." className="bg-transparent border-none outline-none text-white font-black text-sm uppercase px-2 w-40 sm:w-64" />
+               <button onClick={()=>{if(newName.trim()){onChange({...data, custom: [...(data.custom||[]), {id: Date.now().toString(), name: newName.trim(), items: []}]}); setNewName(''); setIsAdding(false);}}} className="p-2 bg-indigo-600 text-white rounded-lg"><Check size={18}/></button>
+               <button onClick={()=>setIsAdding(false)} className="p-2 bg-slate-800 text-slate-400 rounded-lg"><X size={18}/></button>
+             </div>
+           )}
+         </div>
       </div>
 
       <div className="space-y-4">

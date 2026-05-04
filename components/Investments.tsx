@@ -1,21 +1,41 @@
 import React, { useState } from 'react';
-import { InvestmentItem } from '../types';
+import { InvestmentItem, AppState } from '../types';
 import CurrencyInput from './ui/CurrencyInput';
 import DeleteModal from './ui/DeleteModal';
 import { formatRupiah } from '../utils';
-import { Plus, Trash2, TrendingUp, Briefcase, PieChart as PieChartIcon } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { Plus, Trash2, TrendingUp, Briefcase, PieChart as PieChartIcon, TrendingDown } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis } from 'recharts';
 
 interface InvestmentsProps {
   items: InvestmentItem[];
+  appState: AppState;
   isPrivacy?: boolean;
   onChange: (items: InvestmentItem[]) => void;
 }
 
 const COLORS = ['#4F46E5', '#2563EB', '#059669', '#D97706', '#E11D48', '#7C3AED'];
 
-const Investments: React.FC<InvestmentsProps> = ({ items, isPrivacy = false, onChange }) => {
+const Investments: React.FC<InvestmentsProps> = ({ items, appState, isPrivacy = false, onChange }) => {
   const [deleteTarget, setDeleteTarget] = useState<InvestmentItem | null>(null);
+
+  const getHistoryForAsset = (assetName: string) => {
+    if (!assetName.trim()) return [];
+    
+    // Urutkan key bulan secara kronologis
+    const sortedKeys = Object.keys(appState).sort();
+    
+    return sortedKeys.map(key => {
+      const monthData = appState[key];
+      const asset = monthData.investments.find(i => i.name.toLowerCase() === assetName.toLowerCase());
+      
+      const date = new Date(key + '-01');
+      return {
+        month: date.toLocaleString('id-ID', { month: 'short' }),
+        value: asset ? asset.currentValue : 0,
+        fullDate: key
+      };
+    }).filter(d => d.value > 0); // Hanya tampilkan bulan dimana aset ada
+  };
 
   const addItem = () => {
     const newItem: InvestmentItem = { id: Date.now().toString() + Math.random().toString(36).substr(2, 5), name: '', currentValue: 0, targetValue: 0 };
@@ -151,28 +171,73 @@ const Investments: React.FC<InvestmentsProps> = ({ items, isPrivacy = false, onC
               <Plus size={16} /> TAMBAH ASET
             </button>
          </div>
-         <div className="p-4 sm:p-6 space-y-4">
-            {items.map((item) => (
-              <div key={item.id} className="bg-slate-800/40 p-4 sm:p-5 rounded-2xl border border-slate-700/50 grid grid-cols-2 md:grid-cols-12 gap-3 sm:gap-4 items-end transition-colors hover:border-slate-600 group/asset">
-                  <div className="col-span-2 md:col-span-4">
-                    <label className="text-[9px] text-slate-500 uppercase font-black mb-1.5 block">Nama Aset</label>
-                    <input type="text" value={item.name} onChange={(e) => updateItem(item.id, 'name', e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-[var(--text-primary)] text-sm font-black outline-none focus:border-indigo-500" placeholder="Emas, Saham, dll" />
-                  </div>
-                  <div className="col-span-2 md:col-span-3">
-                    <CurrencyInput label="Saldo" value={item.currentValue} isPrivacy={isPrivacy} onChange={(v) => updateItem(item.id, 'currentValue', v)} />
-                  </div>
-                  <div className="col-span-2 md:col-span-3">
-                    <CurrencyInput label="Target" value={item.targetValue} isPrivacy={isPrivacy} onChange={(v) => updateItem(item.id, 'targetValue', v)} />
-                  </div>
-                  <div className="col-span-2 md:col-span-2 flex justify-between items-center pt-2">
-                    <div className="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-700 font-mono font-black text-indigo-600 text-[10px]">
-                      {item.targetValue > 0 ? ((item.currentValue/item.targetValue)*100).toFixed(0) : 0}%
+          <div className="p-4 sm:p-6 space-y-4">
+            {items.map((item) => {
+              const history = getHistoryForAsset(item.name);
+              const isGrowing = history.length > 1 ? history[history.length - 1].value >= history[history.length - 2].value : true;
+
+              return (
+                <div key={item.id} className="bg-slate-800/40 p-4 sm:p-5 rounded-2xl border border-slate-700/50 flex flex-col gap-4 transition-all hover:border-slate-500 hover:bg-slate-800/60 group/asset shadow-sm">
+                    <div className="grid grid-cols-2 md:grid-cols-12 gap-3 sm:gap-4 items-end">
+                      <div className="col-span-2 md:col-span-4">
+                        <label className="text-[9px] text-slate-500 uppercase font-black mb-1.5 block">Nama Aset</label>
+                        <input type="text" value={item.name} onChange={(e) => updateItem(item.id, 'name', e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-[var(--text-primary)] text-sm font-black outline-none focus:border-indigo-500" placeholder="Emas, Saham, dll" />
+                      </div>
+                      <div className="col-span-1 md:col-span-3">
+                        <CurrencyInput label="Saldo" value={item.currentValue} isPrivacy={isPrivacy} onChange={(v) => updateItem(item.id, 'currentValue', v)} />
+                      </div>
+                      <div className="col-span-1 md:col-span-3">
+                        <CurrencyInput label="Target" value={item.targetValue} isPrivacy={isPrivacy} onChange={(v) => updateItem(item.id, 'targetValue', v)} />
+                      </div>
+                      <div className="col-span-2 md:col-span-2 flex justify-between items-center h-full pt-1 sm:pt-0">
+                        <div className="bg-slate-900 px-3 py-1.5 rounded-lg border border-indigo-500/20 font-mono font-black text-indigo-500 text-[10px] flex items-center gap-2">
+                          <span className="sm:hidden text-slate-500 font-bold uppercase mr-1">Progress:</span>
+                          {item.targetValue > 0 ? ((item.currentValue/item.targetValue)*100).toFixed(0) : 0}%
+                        </div>
+                        <button type="button" onClick={() => setDeleteTarget(item)} className="p-3 text-slate-500 hover:text-rose-600 transition-colors"><Trash2 size={20} /></button>
+                      </div>
                     </div>
-                    <button type="button" onClick={() => setDeleteTarget(item)} className="p-3 text-slate-500 hover:text-rose-600"><Trash2 size={20} /></button>
-                  </div>
-              </div>
-            ))}
-         </div>
+
+                    {/* Chart Per Asset */}
+                    {history.length > 1 && (
+                      <div className="mt-2 pt-4 border-t border-slate-700/30">
+                        <div className="flex items-center justify-between mb-4 px-2">
+                           <div className="flex items-center gap-2">
+                              {isGrowing ? <TrendingUp size={14} className="text-emerald-500" /> : <TrendingDown size={14} className="text-rose-500" />}
+                              <span className={`text-[10px] font-black uppercase tracking-widest ${isGrowing ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                Performance Trend
+                              </span>
+                           </div>
+                           <span className="text-[10px] font-black uppercase text-slate-500 tracking-tighter">History: {history.length} Bulan</span>
+                        </div>
+                        <div className="h-[100px] w-full">
+                           <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={history}>
+                                 <Line 
+                                    type="monotone" 
+                                    dataKey="value" 
+                                    stroke={isGrowing ? "#10b981" : "#f43f5e"} 
+                                    strokeWidth={3} 
+                                    dot={{ r: 4, fill: isGrowing ? "#10b981" : "#f43f5e", strokeWidth: 0 }} 
+                                    activeDot={{ r: 6, strokeWidth: 0 }}
+                                 />
+                                 <Tooltip 
+                                    formatter={(v:any)=>formatRupiah(v, isPrivacy)} 
+                                    contentStyle={{backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--border-main)', borderRadius: '12px'}}
+                                    itemStyle={{ color: 'var(--text-primary)', fontWeight: '900' }}
+                                    labelStyle={{ color: 'var(--text-primary)', fontWeight: '900' }}
+                                 />
+                                 <XAxis dataKey="month" hide />
+                                 <YAxis hide domain={['auto', 'auto']} />
+                              </LineChart>
+                           </ResponsiveContainer>
+                        </div>
+                      </div>
+                    )}
+                </div>
+              );
+            })}
+          </div>
       </div>
 
       <DeleteModal isOpen={!!deleteTarget} title="Hapus Aset" itemName={deleteTarget?.name || ""} onClose={() => setDeleteTarget(null)} onConfirm={confirmDelete} />
