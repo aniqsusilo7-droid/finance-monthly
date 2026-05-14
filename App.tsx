@@ -371,7 +371,7 @@ const App: React.FC = () => {
           )}
           {activeTab === 'salary' && <SalarySlip data={currentData.salary} isPrivacy={isPrivacyMode} onChange={(s) => updateCurrentData({ salary: s })} />}
           {activeTab === 'budget' && <Budget income={currentNetIncome} data={currentData.budget} isPrivacy={isPrivacyMode} onChange={(b) => updateCurrentData({ budget: b })} />}
-          {activeTab === 'charts' && <MonthlyCharts budgetData={currentData.budget} income={currentNetIncome} isPrivacy={isPrivacyMode} />}
+          {activeTab === 'charts' && <MonthlyCharts budgetData={currentData.budget} appState={appState} income={currentNetIncome} isPrivacy={isPrivacyMode} />}
           {activeTab === 'invest' && <Investments items={currentData.investments} appState={appState} isPrivacy={isPrivacyMode} onChange={(i) => updateCurrentData({ investments: i })} />}
           {activeTab === 'year' && <YearlySummary appState={appState} year={currentDate.getFullYear()} isPrivacy={isPrivacyMode} />}
           {activeTab === 'ai' && <AIAnalysis currentMonthData={currentData} netIncome={currentNetIncome} />}

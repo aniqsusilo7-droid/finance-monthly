@@ -1,11 +1,12 @@
-import React from 'react';
-import { BudgetData } from '../types';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid } from 'recharts';
-import { formatRupiah } from '../utils';
-import { AlertTriangle } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { BudgetData, AppState } from '../types';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid, LineChart, Line, AreaChart, Area } from 'recharts';
+import { formatRupiah, calculateGrossIncome, calculateTax } from '../utils';
+import { AlertTriangle, TrendingUp, Clock, Wallet } from 'lucide-react';
 
 interface MonthlyChartsProps {
   budgetData: BudgetData;
+  appState: AppState;
   income: number;
   isPrivacy?: boolean;
 }
@@ -29,7 +30,46 @@ const chunkArray = (arr: any[], size: number) => {
   return chunks;
 };
 
-const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income, isPrivacy = false }) => {
+const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, appState, income, isPrivacy = false }) => {
+  const currentYear = new Date().getFullYear();
+
+  const trendData = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => {
+      const monthNum = i + 1;
+      const monthKey = `${currentYear}-${String(monthNum).padStart(2, '0')}`;
+      const data = appState[monthKey];
+
+      if (!data) {
+        return {
+          month: new Date(currentYear, i).toLocaleString('id-ID', { month: 'short' }),
+          salary: 0,
+          overtime: 0
+        };
+      }
+
+      const { salary } = data;
+      const otRupiah = ((salary.basicSalary + salary.housingAllowance) / 173) * salary.overtimeHours;
+      const bonusRupiah = (salary.basicSalary + salary.housingAllowance) * salary.bonusMultiplier;
+      const gross = calculateGrossIncome(
+        salary.basicSalary, 
+        salary.housingAllowance, 
+        salary.shiftAllowance, 
+        otRupiah, 
+        bonusRupiah, 
+        salary.thr, 
+        salary.leavePay
+      );
+      const tax = calculateTax(gross, salary.taxRate);
+      const netIncome = gross - tax - salary.otherDeductions;
+
+      return {
+        month: new Date(currentYear, i).toLocaleString('id-ID', { month: 'short' }),
+        salary: netIncome,
+        overtime: salary.overtimeHours
+      };
+    });
+  }, [appState, currentYear]);
+
   const categories: { name: string, Anggaran: number, Aktual: number, isOver: boolean, color: string }[] = [];
 
   const addCategory = (name: string, budget: number, actual: number, defaultColor: string) => {
@@ -261,6 +301,75 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, income, isPri
            <RenderLegend 
             data={categories.filter(c => c.Aktual > 0).map(cat => ({...cat, color: cat.isOver ? '#E11D48' : cat.color}))} 
            />
+        </div>
+      </div>
+
+      {/* Yearly Trends Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Trend Gaji Bulanan */}
+        <div className="glass-panel p-6 sm:p-8 rounded-[2rem] border border-white/10 flex flex-col relative overflow-hidden">
+           <div className="flex items-center gap-3 mb-6 border-b border-slate-700/10 pb-4">
+              <div className="p-2 bg-indigo-600/20 rounded-xl">
+                 <Wallet size={18} className="text-indigo-500" />
+              </div>
+              <div>
+                 <h3 className="text-xs font-black text-[var(--text-primary)] uppercase tracking-widest">Trend Gaji/Income</h3>
+                 <p className="text-[8px] font-black text-slate-500 uppercase tracking-tighter mt-1">Estimasi dalam setahun ({currentYear})</p>
+              </div>
+           </div>
+           
+           <div className="h-[250px] w-full">
+             <ResponsiveContainer width="100%" height="100%">
+               <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorSalary" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid)" opacity={0.3} />
+                  <XAxis dataKey="month" stroke="var(--chart-label)" fontSize={9} tickLine={false} axisLine={false} tick={{fontWeight: 900, fill: 'var(--chart-label)'}} />
+                  <YAxis stroke="var(--chart-label)" fontSize={9} tickFormatter={yAxisFormatter} tickLine={false} axisLine={false} tick={{fontWeight: 900, fill: 'var(--chart-label)'}} width={65} />
+                  <Tooltip 
+                    formatter={(v:any) => formatRupiah(v, isPrivacy)}
+                    contentStyle={{backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--border-main)', borderRadius: '12px'}}
+                    itemStyle={{ color: 'var(--text-primary)', fontWeight: '900', fontSize: '10px' }}
+                    labelStyle={{ color: 'var(--text-primary)', fontWeight: '900', fontSize: '10px', textTransform: 'uppercase' }}
+                  />
+                  <Area type="monotone" dataKey="salary" name="Gaji Bersih" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorSalary)" dot={{ r: 3, fill: '#6366f1', strokeWidth: 0 }} activeDot={{ r: 5, strokeWidth: 0 }} />
+               </AreaChart>
+             </ResponsiveContainer>
+           </div>
+        </div>
+
+        {/* Trend Jam Lembur Bulanan */}
+        <div className="glass-panel p-6 sm:p-8 rounded-[2rem] border border-white/10 flex flex-col relative overflow-hidden">
+           <div className="flex items-center gap-3 mb-6 border-b border-slate-700/10 pb-4">
+              <div className="p-2 bg-amber-600/20 rounded-xl">
+                 <Clock size={18} className="text-amber-500" />
+              </div>
+              <div>
+                 <h3 className="text-xs font-black text-[var(--text-primary)] uppercase tracking-widest">Trend Jam Lembur</h3>
+                 <p className="text-[8px] font-black text-slate-500 uppercase tracking-tighter mt-1">Total Jam Eqv dalam setahun ({currentYear})</p>
+              </div>
+           </div>
+           
+           <div className="h-[250px] w-full">
+             <ResponsiveContainer width="100%" height="100%">
+               <BarChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--chart-grid)" opacity={0.3} />
+                  <XAxis dataKey="month" stroke="var(--chart-label)" fontSize={9} tickLine={false} axisLine={false} tick={{fontWeight: 900, fill: 'var(--chart-label)'}} />
+                  <YAxis stroke="var(--chart-label)" fontSize={9} tickFormatter={(val) => `${val}j`} tickLine={false} axisLine={false} tick={{fontWeight: 900, fill: 'var(--chart-label)'}} width={50} />
+                  <Tooltip 
+                    formatter={(v:any) => [`${v.toFixed(1)} Jam`, 'Lembur']}
+                    contentStyle={{backgroundColor: 'var(--tooltip-bg)', border: '1px solid var(--border-main)', borderRadius: '12px'}}
+                    itemStyle={{ color: 'var(--text-primary)', fontWeight: '900', fontSize: '10px' }}
+                    labelStyle={{ color: 'var(--text-primary)', fontWeight: '900', fontSize: '10px', textTransform: 'uppercase' }}
+                  />
+                  <Bar dataKey="overtime" name="Lembur" fill="#f59e0b" radius={[6, 6, 0, 0]} maxBarSize={20} />
+               </BarChart>
+             </ResponsiveContainer>
+           </div>
         </div>
       </div>
     </div>
