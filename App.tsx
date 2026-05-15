@@ -9,7 +9,7 @@ import YearlySummary from './components/YearlySummary';
 import AIAnalysis from './components/AIAnalysis';
 import Login from './components/Login';
 import { calculateGrossIncome, calculateTax, calculateOvertime, calculateBonus, calculateEqvHours, formatRupiah } from './utils';
-import { Wallet, LayoutDashboard, PieChart, TrendingUp, Calendar, ChevronLeft, ChevronRight, Cloud, Loader2, CheckCircle2, Sparkles, Sun, Moon, LogOut, Clock, Eye, EyeOff, Copy } from 'lucide-react';
+import { Wallet, LayoutDashboard, PieChart, TrendingUp, Calendar, ChevronLeft, ChevronRight, Cloud, Loader2, CheckCircle2, Sparkles, Sun, Moon, LogOut, Clock, Eye, EyeOff, Copy, AlertCircle } from 'lucide-react';
 import { supabase } from './supabaseClient';
 
 const TABS = [
@@ -31,6 +31,7 @@ const App: React.FC = () => {
     return localStorage.getItem('is_authenticated') === 'true';
   });
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [dbError, setDbError] = useState<string | null>(null);
   
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     return (localStorage.getItem('app-theme') as 'dark' | 'light') || 'dark';
@@ -84,12 +85,18 @@ const App: React.FC = () => {
     
     const fetchData = async () => {
       setIsLoading(true);
+      setDbError(null);
       try {
         const { data, error } = await supabase
           .from('monthly_finance')
           .select('month_id, data');
         
-        if (error) throw error;
+        if (error) {
+           if (error.message.includes("failed to fetch")) {
+             throw new Error("Koneksi gagal. Pastikan URL Supabase benar.");
+           }
+           throw error;
+        }
         
         if (data) {
           const loadedState: AppState = {};
@@ -98,8 +105,9 @@ const App: React.FC = () => {
           });
           setAppState(loadedState);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error fetching cloud finance data:", err);
+        setDbError(`Database Error: ${err.message || "Periksa konfigurasi Supabase"}`);
       } finally {
         setIsLoading(false);
       }
@@ -124,10 +132,12 @@ const App: React.FC = () => {
           
         if (error) throw error;
         setSaveStatus('saved');
+        setDbError(null);
         setTimeout(() => setSaveStatus('idle'), 2000);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error saving to cloud:", err);
         setSaveStatus('error');
+        setDbError(`Gagal menyimpan: ${err.message || "Masalah koneksi"}`);
       }
     };
     
@@ -360,6 +370,12 @@ const App: React.FC = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-24 sm:pt-32 pb-24 sm:pb-12">
+        {dbError && (
+          <div className="mb-4 glass-panel p-3 rounded-xl border-l-4 border-rose-500 bg-rose-500/10 flex items-center gap-3 animate-pulse">
+            <AlertCircle size={16} className="text-rose-500" />
+            <p className="text-rose-200 text-[10px] font-black uppercase tracking-tight">{dbError}</p>
+          </div>
+        )}
         <div className="animate-fadeIn">
           {activeTab === 'ot' && (
             <OvertimeTracker 
