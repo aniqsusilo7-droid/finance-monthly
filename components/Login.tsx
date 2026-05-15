@@ -77,9 +77,31 @@ const Login: React.FC<LoginProps> = ({ onAuthenticated }) => {
     exit: { opacity: 0, scale: 1.05, transition: { duration: 0.3 } }
   };
 
+  const formVariants = {
+    hidden: { opacity: 0, x: 20 },
+    visible: { 
+      opacity: 1, 
+      x: 0,
+      transition: { 
+        duration: 0.4,
+        staggerChildren: 0.05,
+        when: "beforeChildren"
+      }
+    },
+    exit: { 
+      opacity: 0, 
+      x: -20, 
+      transition: { duration: 0.3 } 
+    }
+  };
+
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 }
+    hidden: { opacity: 0, y: 10 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.3 }
+    }
   };
 
   return (
@@ -103,10 +125,10 @@ const Login: React.FC<LoginProps> = ({ onAuthenticated }) => {
           <AnimatePresence mode="wait">
             <motion.div 
               key={isSignUp ? 'signup' : isForgot ? 'forgot' : 'login'}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.4 }}
+              variants={formVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
               className="flex flex-col items-center"
             >
               <motion.div variants={itemVariants} className="flex items-center gap-4 mb-8">

@@ -67,6 +67,8 @@ const OvertimeTracker: React.FC<OvertimeTrackerProps> = ({ entries, profile, onP
   const totalActual = entries.reduce((acc, curr) => acc + curr.actualHours, 0);
   const totalEqv = entries.reduce((acc, curr) => acc + calculateEqvHours(curr.actualHours, curr.type), 0);
 
+  const sortedEntries = [...entries].sort((a, b) => a.date.localeCompare(b.date));
+
   return (
     <div className="space-y-6 animate-fadeIn pb-24">
       {/* Profile & Info Section */}
@@ -205,7 +207,7 @@ const OvertimeTracker: React.FC<OvertimeTrackerProps> = ({ entries, profile, onP
                 </button>
               </motion.div>
             ) : (
-              entries.map((entry, index) => {
+              sortedEntries.map((entry, index) => {
                 const eqv = calculateEqvHours(entry.actualHours, entry.type);
                 return (
                   <motion.div
@@ -299,12 +301,20 @@ const OvertimeTracker: React.FC<OvertimeTrackerProps> = ({ entries, profile, onP
                             {eqv.toFixed(2)}
                           </div>
                         </div>
+                        
+                        {/* Delete Button Mobile */}
+                        <button 
+                          onClick={() => removeEntry(entry.id)} 
+                          className="sm:hidden p-2 text-rose-500/70 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </div>
 
-                      {/* Delete Button */}
+                      {/* Delete Button Desktop */}
                       <button 
                         onClick={() => removeEntry(entry.id)} 
-                        className="absolute right-3 top-2 sm:static sm:flex items-center justify-center p-2 text-slate-700 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
+                        className="hidden sm:flex items-center justify-center p-2 text-slate-700 hover:text-rose-500 hover:bg-rose-500/10 rounded-xl transition-all"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -317,21 +327,6 @@ const OvertimeTracker: React.FC<OvertimeTrackerProps> = ({ entries, profile, onP
         </div>
       </div>
 
-      {/* Sticky Bottom Summary for Mobile */}
-      <div className="fixed bottom-20 left-4 right-4 sm:hidden z-50">
-        <div className="glass-panel p-4 rounded-3xl border border-indigo-500/30 bg-indigo-600 shadow-2xl flex justify-between items-center text-white">
-          <div className="flex flex-col">
-            <span className="text-[8px] font-black uppercase opacity-70 tracking-widest">Total Equivalent</span>
-            <span className="text-xl font-black tracking-tight">{totalEqv.toFixed(2)} Hours</span>
-          </div>
-          <button 
-            onClick={addEntry}
-            className="bg-white text-indigo-600 p-2 rounded-xl shadow-lg active:scale-95"
-          >
-            <Plus size={20} />
-          </button>
-        </div>
-      </div>
     </div>
   );
 };
