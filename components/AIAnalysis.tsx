@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import { MonthlyData } from '../types';
 import { formatRupiah } from '../utils';
-import { Sparkles, BrainCircuit, RefreshCw, AlertCircle, CheckCircle2, Wifi } from 'lucide-react';
+import { 
+  Sparkles, BrainCircuit, RefreshCw, AlertCircle, 
+  CheckCircle2, Wifi, KeyRound, Eye, EyeOff, Settings, 
+  X, Lock, ExternalLink, Copy, Check
+} from 'lucide-react';
 
 interface AIAnalysisProps {
   currentMonthData: MonthlyData;
@@ -13,6 +17,59 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) 
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Manual API Key State
+  const [apiKeyInput, setApiKeyInput] = useState(() => {
+    return localStorage.getItem('user_gemini_api_key') || '';
+  });
+  const [showKey, setShowKey] = useState(false);
+  const [isConfigOpen, setIsConfigOpen] = useState(() => {
+    const stored = localStorage.getItem('user_gemini_api_key');
+    const envKey = import.meta.env.VITE_GEMINI_API_KEY;
+    return !stored && !envKey;
+  });
+  const [savedKeyFeedback, setSavedKeyFeedback] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const keyToProvide = "AIzaSyDxYNvHt5a0VjhBVeFoJ9gxmas3HVTDgTo";
+
+  const handleApplyKey = () => {
+    setApiKeyInput(keyToProvide);
+    navigator.clipboard.writeText(keyToProvide);
+    setCopied(true);
+    setSavedKeyFeedback("Key berhasil disalin & dimasukkan!");
+    setTimeout(() => {
+      setCopied(false);
+      setSavedKeyFeedback(null);
+    }, 2000);
+  };
+
+  const handleSaveKey = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = apiKeyInput.trim();
+    if (trimmed) {
+      localStorage.setItem('user_gemini_api_key', trimmed);
+      setSavedKeyFeedback("API Key berhasil disimpan!");
+      setError(null);
+      setTimeout(() => {
+        setSavedKeyFeedback(null);
+        setIsConfigOpen(false);
+      }, 1500);
+    } else {
+      localStorage.removeItem('user_gemini_api_key');
+      setSavedKeyFeedback("API Key terhapus.");
+      setTimeout(() => setSavedKeyFeedback(null), 1500);
+    }
+  };
+
+  const handleRemoveKey = () => {
+    localStorage.removeItem('user_gemini_api_key');
+    setApiKeyInput('');
+    setSavedKeyFeedback("API Key berhasil dihapus.");
+    setTimeout(() => setSavedKeyFeedback(null), 1500);
+  };
+
+  const currentActiveKey = apiKeyInput.trim() || import.meta.env.VITE_GEMINI_API_KEY || '';
 
   const generateAnalysis = async () => {
     // 1. Cek Koneksi Internet
@@ -25,9 +82,10 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) 
     setError(null);
     
     try {
-      // Inisialisasi Gemini API sesuai panduan (selalu gunakan process.env.GEMINI_API_KEY)
-      const apiKey = process.env.GEMINI_API_KEY;
+      // Inisialisasi Gemini API secara aman (mendahulukan key manual dari user)
+      const apiKey = localStorage.getItem('user_gemini_api_key')?.trim() || import.meta.env.VITE_GEMINI_API_KEY || '';
       if (!apiKey) {
+        setIsConfigOpen(true);
         throw new Error("GEMINI_API_KEY_MISSING");
       }
 
@@ -56,9 +114,9 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) 
       
       Gunakan format Markdown yang profesional dan mudah dibaca di smartphone.`;
 
-      // Menggunakan gemini-3-flash-preview untuk tugas teks dasar
+      // Menggunakan gemini-3.5-flash sesuai rekomendasi skill
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3.5-flash',
         contents: prompt,
       });
 
@@ -72,11 +130,11 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) 
       console.error("AI Analysis Error:", err);
       
       if (err.message === "GEMINI_API_KEY_MISSING") {
-        setError("API Key belum dikonfigurasi. Silakan atur GEMINI_API_KEY di menu Settings > Secrets.");
+        setError("API Key belum dikonfigurasi. Silakan masukkan API Key Anda menggunakan dialog 'Setup Manual API Key' di bawah.");
       } else if (err.message?.includes("403") || err.message?.includes("400") || err.message?.includes("API_KEY_INVALID")) {
-        setError("API Key tidak valid atau akses ditolak. Silakan periksa key Anda di menu Settings > Secrets.");
+        setError("API Key tidak valid atau akses ditolak. Silakan periksa kembali Gemini API Key yang Anda masukkan.");
       } else if (err.message?.includes("429") || err.message?.includes("RESOURCE_EXHAUSTED")) {
-        setError("Batas kuota API tercapai. Silakan coba lagi nanti atau hubungkan Billing Enabled Key.");
+        setError("Batas kuota API tercapai. Silakan coba lagi nanti atau gunakan Free/Premium API Key yang lain.");
       } else {
         setError(`Terjadi kesalahan: ${err.message || "Gagal menghubungi server AI. Pastikan koneksi internet stabil."}`);
       }
@@ -95,9 +153,140 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) 
             <BrainCircuit className="text-white w-8 h-8 sm:w-12 sm:h-12" />
           </div>
           <h2 className="text-lg sm:text-3xl font-black text-white uppercase tracking-tight mb-2">Financial AI Analyst</h2>
-          <p className="text-slate-400 max-w-sm font-bold text-[10px] sm:text-sm leading-relaxed mb-6 sm:mb-8 px-2">
+          <p className="text-slate-400 max-w-sm font-bold text-[10px] sm:text-sm leading-relaxed mb-4 px-2">
             Konsultasikan strategi keuangan bulanan Anda dengan kecerdasan buatan Gemini AI.
           </p>
+
+          {/* Status API Key & Toggle Setup */}
+          <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
+            {currentActiveKey ? (
+              <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">
+                <CheckCircle2 size={10} />
+                API Key {apiKeyInput.trim() ? 'Manual Setup' : 'Default Active'}
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest animate-pulse">
+                <AlertCircle size={10} />
+                API Key Diperlukan
+              </div>
+            )}
+            
+            <button 
+              type="button"
+              onClick={() => setIsConfigOpen(!isConfigOpen)}
+              className="flex items-center gap-1.5 bg-white/5 hover:bg-white/10 active:scale-95 text-slate-300 border border-white/5 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all"
+            >
+              <Settings size={10} className={isConfigOpen ? "rotate-45" : ""} />
+              {isConfigOpen ? 'Tutup Setup Key' : 'Setup Manual Key'}
+            </button>
+          </div>
+
+          {/* Form Setup Manual API Key */}
+          {isConfigOpen && (
+            <div className="w-full max-w-md bg-slate-950/60 border border-white/10 p-5 rounded-2xl text-left mb-6 relative animate-fadeIn shadow-inner">
+              <div className="flex items-center justify-between mb-4 pb-2 border-b border-white/5">
+                <div className="flex items-center gap-2">
+                  <KeyRound size={14} className="text-indigo-400" />
+                  <h4 className="text-[10px] font-black text-white uppercase tracking-widest">Setup Manual Gemini Key</h4>
+                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setIsConfigOpen(false)}
+                  className="text-slate-500 hover:text-white transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+
+              {/* Quick Fill Key Default */}
+              <div className="mb-4 bg-indigo-950/40 border border-indigo-500/20 rounded-xl p-3 sm:p-4 flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[8px] font-black uppercase text-indigo-400 tracking-wider">Default Demo Key Tersedia</span>
+                  <button
+                    type="button"
+                    onClick={handleApplyKey}
+                    className="flex items-center gap-1.5 text-[8px] font-black uppercase text-white bg-indigo-600/80 hover:bg-indigo-600 px-2.5 py-1 rounded-lg transition-all active:scale-95 shadow-md"
+                  >
+                    {copied ? (
+                      <>
+                        <Check size={10} /> Berhasil
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={10} /> Salin & Gunakan
+                      </>
+                    )}
+                  </button>
+                </div>
+                <div className="flex items-center justify-between bg-slate-950/80 rounded-lg p-2 font-mono text-[9px] sm:text-[10px] text-indigo-300 select-all overflow-hidden text-ellipsis border border-indigo-500/10">
+                  {keyToProvide}
+                </div>
+                <p className="text-[8px] text-slate-400 leading-normal">
+                  *Klik tombol untuk menyalin dan mengisi formulir di bawah secara instan.
+                </p>
+              </div>
+
+              <form onSubmit={handleSaveKey} className="space-y-3.5">
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center px-1">
+                    <label className="text-[9px] font-black uppercase text-slate-500 tracking-widest">API Key Anda</label>
+                    <a 
+                      href="https://aistudio.google.com/" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-[8px] font-black text-indigo-400 hover:text-indigo-300 flex items-center gap-1 uppercase tracking-wider transition-colors"
+                    >
+                      Dapatkan Key Gratis <ExternalLink size={8} />
+                    </a>
+                  </div>
+                  <div className="relative group">
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600 group-focus-within:text-indigo-400 transition-colors" />
+                    <input 
+                      type={showKey ? "text" : "password"} 
+                      value={apiKeyInput} 
+                      onChange={(e) => setApiKeyInput(e.target.value)} 
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl py-2.5 pl-10 pr-10 text-white font-mono text-[11px] focus:outline-none focus:border-indigo-500 transition-all placeholder:text-slate-850" 
+                      placeholder="Masukkan Gemini API Key (AIzaSy...)" 
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowKey(!showKey)} 
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-600 hover:text-white transition-colors"
+                    >
+                      {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                </div>
+
+                {savedKeyFeedback && (
+                  <div className="text-[9px] font-black text-emerald-400 uppercase tracking-widest text-center py-1">
+                    {savedKeyFeedback}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <button 
+                    type="submit" 
+                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95"
+                  >
+                    Simpan Key
+                  </button>
+                  {localStorage.getItem('user_gemini_api_key') && (
+                    <button 
+                      type="button" 
+                      onClick={handleRemoveKey}
+                      className="py-2.5 px-3 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all active:scale-95"
+                    >
+                      Hapus
+                    </button>
+                  )}
+                </div>
+                <p className="text-[8px] text-slate-500 leading-normal pl-1">
+                  *Key disimpan aman di browser Anda lokal (localStorage) dan tidak dikirimkan ke server mana pun kecuali API resmi Google.
+                </p>
+              </form>
+            </div>
+          )}
           
           <button 
             onClick={generateAnalysis}

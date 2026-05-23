@@ -42,12 +42,13 @@ const YearlySummary: React.FC<YearlySummaryProps> = ({ appState, year, isPrivacy
       const netIncome = gross - tax - salary.otherDeductions;
 
       const { budget } = data;
-      const expense = 
+      const expense = budget ? (
         (budget.needs?.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0) +
         (budget.savings?.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0) + 
         (budget.debt?.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0) +
         (budget.others?.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0) +
-        (budget.custom || []).reduce((acc, cat) => acc + (cat.items?.reduce((ia, ii) => ia + (ii.actual || 0), 0) || 0), 0);
+        (budget.custom || []).reduce((acc, cat) => acc + (cat.items?.reduce((ia, ii) => ia + (ii.actual || 0), 0) || 0), 0)
+      ) : 0;
 
       const profit = netIncome - expense;
       const margin = netIncome > 0 ? (profit / netIncome) * 100 : 0;

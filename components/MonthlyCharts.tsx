@@ -97,9 +97,9 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, appState, inc
   const categoryChunks = chunkArray(categories, 4);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const budgetVal = payload.find((p: any) => p.name === 'Rencana' || p.name === 'Anggaran')?.value || 0;
-      const actualVal = payload.find((p: any) => p.name === 'Aktual')?.value || 0;
+    if (active && payload && Array.isArray(payload) && payload.length) {
+      const budgetVal = payload.find?.((p: any) => p.name === 'Rencana' || p.name === 'Anggaran')?.value || 0;
+      const actualVal = payload.find?.((p: any) => p.name === 'Aktual')?.value || 0;
       const isOver = actualVal > budgetVal && budgetVal > 0;
 
       return (

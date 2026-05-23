@@ -15,7 +15,7 @@ interface InvestmentsProps {
 
 const COLORS = ['#4F46E5', '#2563EB', '#059669', '#D97706', '#E11D48', '#7C3AED'];
 
-const Investments: React.FC<InvestmentsProps> = ({ items, appState, isPrivacy = false, onChange }) => {
+const Investments: React.FC<InvestmentsProps> = ({ items = [], appState = {}, isPrivacy = false, onChange }) => {
   const [deleteTarget, setDeleteTarget] = useState<InvestmentItem | null>(null);
 
   const getHistoryForAsset = (assetName: string) => {
@@ -26,7 +26,7 @@ const Investments: React.FC<InvestmentsProps> = ({ items, appState, isPrivacy = 
     
     return sortedKeys.map(key => {
       const monthData = appState[key];
-      const asset = monthData.investments.find(i => i.name.toLowerCase() === assetName.toLowerCase());
+      const asset = monthData?.investments?.find(i => i && i.name && i.name.toLowerCase() === assetName.toLowerCase());
       
       const date = new Date(key + '-01');
       return {
