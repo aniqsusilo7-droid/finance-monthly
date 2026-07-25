@@ -3,19 +3,22 @@ import { AppState, MonthlyData, DEFAULT_SALARY, DEFAULT_BUDGET, DEFAULT_PROFILE,
 import OvertimeTracker from './components/OvertimeTracker'; 
 import SalarySlip from './components/SalarySlip';
 import Budget from './components/Budget';
+import { BudgetHistory } from './components/BudgetHistory';
 import MonthlyCharts from './components/MonthlyCharts';
 import Investments from './components/Investments';
 import YearlySummary from './components/YearlySummary';
 import AIAnalysis from './components/AIAnalysis';
 import Login from './components/Login';
-import { calculateGrossIncome, calculateTax, calculateOvertime, calculateBonus, calculateEqvHours, formatRupiah } from './utils';
-import { Wallet, LayoutDashboard, PieChart, TrendingUp, Calendar, ChevronLeft, ChevronRight, Cloud, Loader2, CheckCircle2, Sparkles, Sun, Moon, LogOut, Clock, Eye, EyeOff, Copy, AlertCircle } from 'lucide-react';
-import { supabase } from './supabaseClient';
+import { calculateGrossIncome, calculateTax, calculateOvertime, calculateBonus, calculateEqvHours, formatRupiah, getBudgetMonth, getBudgetPeriodLabel } from './utils';
+import { Wallet, LayoutDashboard, PieChart, TrendingUp, Calendar, ChevronLeft, ChevronRight, Cloud, Loader2, CheckCircle2, Sparkles, Sun, Moon, LogOut, Clock, Eye, EyeOff, Copy, AlertCircle, History } from 'lucide-react';
+import { collection, getDocs, doc, setDoc, getDocsFromCache } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from './firebaseConfig';
 
 const TABS = [
   { id: 'ot', label: 'Lembur', icon: Clock },
   { id: 'salary', label: 'Gaji', icon: Wallet },
   { id: 'budget', label: 'Anggaran', icon: LayoutDashboard },
+  { id: 'history', label: 'Riwayat', icon: History },
   { id: 'charts', label: 'Grafik', icon: PieChart },
   { id: 'invest', label: 'Aset', icon: TrendingUp },
   { id: 'year', label: 'Tahun', icon: Calendar },
@@ -40,6 +43,8 @@ const App: React.FC = () => {
   const [isPrivacyMode, setIsPrivacyMode] = useState(() => {
     return localStorage.getItem('privacy-mode') === 'true';
   });
+
+  const lastSavedStateRef = React.useRef<AppState>({});
 
   const [showCopyModal, setShowCopyModal] = useState(false);
   const [copyOptions, setCopyOptions] = useState({
@@ -81,69 +86,114 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!isAuthenticated) return;
-    
-    const fetchData = async () => {
-      setIsLoading(true);
-      setDbError(null);
-      try {
-        const { data, error } = await supabase
-          .from('monthly_finance')
-          .select('month_id, data');
-        
-        if (error) {
-           if (error.message.includes("failed to fetch")) {
-             throw new Error("Koneksi gagal. Pastikan URL Supabase benar.");
-           }
-           throw error;
-        }
-        
-        if (data) {
+      if (!isAuthenticated) return;
+      
+      const fetchData = async () => {
+        setIsLoading(true);
+        setDbError(null);
+        try {
+          const querySnapshot = await getDocs(collection(db, 'monthly_finance'));
           const loadedState: AppState = {};
-          data.forEach((row: any) => { 
-            loadedState[row.month_id] = row.data; 
+          querySnapshot.forEach((docSnap) => {
+            const row = docSnap.data();
+            if (row && row.month_id && row.data) {
+              loadedState[row.month_id] = row.data;
+            }
           });
           setAppState(loadedState);
+        } catch (err: any) {
+          console.error("Error fetching cloud finance data:", err);
+          const isConnectionError = 
+            err.code === 'unavailable' || 
+            err.message?.includes('unavailable') || 
+            err.message?.includes('Could not reach Cloud Firestore') ||
+            err.message?.includes('offline');
+
+          if (isConnectionError) {
+            setDbError("Bekerja offline. Data disimpan lokal & disinkronkan otomatis saat online.");
+            // Try loading from local persistent cache so the user doesn't see a blank app
+            try {
+              const cachedSnapshot = await getDocsFromCache(collection(db, 'monthly_finance'));
+              const loadedState: AppState = {};
+              cachedSnapshot.forEach((docSnap) => {
+                const row = docSnap.data();
+                if (row && row.month_id && row.data) {
+                  loadedState[row.month_id] = row.data;
+                }
+              });
+              if (Object.keys(loadedState).length > 0) {
+                setAppState(loadedState);
+              }
+            } catch (cacheErr) {
+              console.warn("Attempted to load from firestore offline cache, but it was empty or failed:", cacheErr);
+            }
+          } else {
+            setDbError(`Database Error: ${err.message || "Periksa konfigurasi Firebase"}`);
+            handleFirestoreError(err, OperationType.GET, 'monthly_finance');
+          }
+        } finally {
+          setIsLoading(false);
         }
-      } catch (err: any) {
-        console.error("Error fetching cloud finance data:", err);
-        setDbError(`Database Error: ${err.message || "Periksa konfigurasi Supabase"}`);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchData();
-  }, [isAuthenticated]);
+      };
+      
+      fetchData();
+    }, [isAuthenticated]);
 
   useEffect(() => {
-    if (!isAuthenticated || isLoading || !appState[currentMonthKey]) return;
-    
-    const saveData = async () => {
-      setSaveStatus('saving');
-      try {
-        const { error } = await supabase
-          .from('monthly_finance')
-          .upsert({ 
-            month_id: currentMonthKey, 
-            data: appState[currentMonthKey],
-            updated_at: new Date().toISOString()
+      if (!isAuthenticated || isLoading) return;
+      
+      const saveData = async () => {
+        setSaveStatus('saving');
+        try {
+          // Cari semua bulan yang berbeda dari state terakhir yang disimpan
+          const keysToSave = Object.keys(appState).filter(key => {
+            return JSON.stringify(appState[key]) !== JSON.stringify(lastSavedStateRef.current[key]);
           });
-          
-        if (error) throw error;
-        setSaveStatus('saved');
-        setDbError(null);
-        setTimeout(() => setSaveStatus('idle'), 2000);
-      } catch (err: any) {
-        console.error("Error saving to cloud:", err);
-        setSaveStatus('error');
-        setDbError(`Gagal menyimpan: ${err.message || "Masalah koneksi"}`);
+
+          if (keysToSave.length === 0) {
+            setSaveStatus('idle');
+            return;
+          }
+
+          for (const key of keysToSave) {
+            const docRef = doc(db, 'monthly_finance', key);
+            await setDoc(docRef, { 
+              month_id: key, 
+              data: appState[key],
+              updated_at: new Date().toISOString()
+            });
+            lastSavedStateRef.current[key] = JSON.parse(JSON.stringify(appState[key]));
+          }
+            
+          setSaveStatus('saved');
+          setDbError(null);
+          setTimeout(() => setSaveStatus('idle'), 2000);
+        } catch (err: any) {
+          console.error("Error saving to cloud:", err);
+          const isConnectionError = 
+            err.code === 'unavailable' || 
+            err.message?.includes('unavailable') || 
+            err.message?.includes('Could not reach Cloud Firestore') ||
+            err.message?.includes('offline');
+
+          if (isConnectionError) {
+            setSaveStatus('saved'); // set as saved since write is queued in local offline store
+            setDbError("Disimpan offline. Perubahan akan disinkronkan otomatis saat terhubung kembali.");
+          } else {
+            setSaveStatus('error');
+            setDbError(`Gagal menyimpan: ${err.message || "Masalah koneksi"}`);
+            handleFirestoreError(err, OperationType.WRITE, `monthly_finance`);
+          }
+        }
+      };
+      
+      if (Object.keys(lastSavedStateRef.current).length === 0 && Object.keys(appState).length > 0) {
+        lastSavedStateRef.current = JSON.parse(JSON.stringify(appState));
       }
-    };
-    
-    const timeoutId = setTimeout(saveData, 1000);
-    return () => clearTimeout(timeoutId);
-  }, [appState, currentMonthKey, isLoading, isAuthenticated]);
+
+      const timeoutId = setTimeout(saveData, 1000);
+      return () => clearTimeout(timeoutId);
+    }, [appState, isLoading, isAuthenticated]);
 
   const calculateCurrentIncome = (data: MonthlyData) => {
      const { salary } = data;
@@ -168,11 +218,153 @@ const App: React.FC = () => {
         profile: { ...DEFAULT_PROFILE }
       };
 
-      const updated = { ...existing, ...newData };
+      let updated = { ...existing, ...newData };
       
       if (newData.overtimeEntries) {
         const totalEqv = newData.overtimeEntries.reduce((acc, curr) => acc + calculateEqvHours(curr.actualHours, curr.type), 0);
         updated.salary = { ...updated.salary, overtimeHours: totalEqv };
+      }
+
+      // Jika kita mengupdate budget, kita ingin memindahkan item yang tanggalnya di luar bulan ini ke bulan yang sesuai
+      if (newData.budget) {
+        const newState = JSON.parse(JSON.stringify(prev));
+        newState[currentMonthKey] = {
+          ...existing,
+          ...newData,
+          budget: JSON.parse(JSON.stringify(newData.budget))
+        };
+
+        const bCurrent = newState[currentMonthKey].budget;
+
+        const ensureBudgetInit = (mKey: string) => {
+          if (!newState[mKey]) {
+            newState[mKey] = {
+              salary: { ...DEFAULT_SALARY },
+              budget: {
+                needs: { items: [], name: "Kebutuhan Pokok" },
+                savings: { items: [], name: "Tabungan & Investasi" },
+                debt: { items: [], name: "Hutang & Cicilan" },
+                others: { allocation: 0, items: [] },
+                custom: []
+              },
+              investments: [],
+              overtimeEntries: [],
+              profile: { ...DEFAULT_PROFILE }
+            };
+          }
+          const b = newState[mKey].budget;
+          if (!b.needs) b.needs = { items: [], name: "Kebutuhan Pokok" };
+          if (!b.savings) b.savings = { items: [], name: "Tabungan & Investasi" };
+          if (!b.debt) b.debt = { items: [], name: "Hutang & Cicilan" };
+          if (!b.others) b.others = { allocation: 0, items: [] };
+          if (!b.custom) b.custom = [];
+        };
+
+        // 1. Needs
+        if (bCurrent.needs && bCurrent.needs.items) {
+          const itemsToKeep: any[] = [];
+          bCurrent.needs.items.forEach((item: any) => {
+            const targetM = item.date ? getBudgetMonth(item.date) : currentMonthKey;
+            if (targetM && targetM !== currentMonthKey) {
+              ensureBudgetInit(targetM);
+              const targetNeeds = newState[targetM].budget.needs;
+              if (!targetNeeds.items) targetNeeds.items = [];
+              if (!targetNeeds.items.some((i: any) => i.id === item.id)) {
+                targetNeeds.items.push(item);
+              }
+            } else {
+              itemsToKeep.push(item);
+            }
+          });
+          bCurrent.needs.items = itemsToKeep;
+        }
+
+        // 2. Savings
+        if (bCurrent.savings && bCurrent.savings.items) {
+          const itemsToKeep: any[] = [];
+          bCurrent.savings.items.forEach((item: any) => {
+            const targetM = item.date ? getBudgetMonth(item.date) : currentMonthKey;
+            if (targetM && targetM !== currentMonthKey) {
+              ensureBudgetInit(targetM);
+              const targetSavings = newState[targetM].budget.savings;
+              if (!targetSavings.items) targetSavings.items = [];
+              if (!targetSavings.items.some((i: any) => i.id === item.id)) {
+                targetSavings.items.push(item);
+              }
+            } else {
+              itemsToKeep.push(item);
+            }
+          });
+          bCurrent.savings.items = itemsToKeep;
+        }
+
+        // 3. Debt
+        if (bCurrent.debt && bCurrent.debt.items) {
+          const itemsToKeep: any[] = [];
+          bCurrent.debt.items.forEach((item: any) => {
+            const targetM = item.date ? getBudgetMonth(item.date) : currentMonthKey;
+            if (targetM && targetM !== currentMonthKey) {
+              ensureBudgetInit(targetM);
+              const targetDebt = newState[targetM].budget.debt;
+              if (!targetDebt.items) targetDebt.items = [];
+              if (!targetDebt.items.some((i: any) => i.id === item.id)) {
+                targetDebt.items.push(item);
+              }
+            } else {
+              itemsToKeep.push(item);
+            }
+          });
+          bCurrent.debt.items = itemsToKeep;
+        }
+
+        // 4. Others
+        if (bCurrent.others && bCurrent.others.items) {
+          const itemsToKeep: any[] = [];
+          bCurrent.others.items.forEach((item: any) => {
+            const targetM = item.date ? getBudgetMonth(item.date) : currentMonthKey;
+            if (targetM && targetM !== currentMonthKey) {
+              ensureBudgetInit(targetM);
+              const targetOthers = newState[targetM].budget.others;
+              if (!targetOthers.items) targetOthers.items = [];
+              if (!targetOthers.items.some((i: any) => i.id === item.id)) {
+                targetOthers.items.push(item);
+              }
+            } else {
+              itemsToKeep.push(item);
+            }
+          });
+          bCurrent.others.items = itemsToKeep;
+        }
+
+        // 5. Custom
+        if (bCurrent.custom) {
+          bCurrent.custom.forEach((cat: any) => {
+            const itemsToKeep: any[] = [];
+            if (cat.items) {
+              cat.items.forEach((item: any) => {
+                const targetM = item.date ? getBudgetMonth(item.date) : currentMonthKey;
+                if (targetM && targetM !== currentMonthKey) {
+                  ensureBudgetInit(targetM);
+                  const targetCustom = newState[targetM].budget.custom;
+                  let targetCat = targetCustom.find((c: any) => c.name === cat.name || c.id === cat.id);
+                  if (!targetCat) {
+                    targetCat = { id: cat.id || Date.now().toString(), name: cat.name, items: [] };
+                    targetCustom.push(targetCat);
+                  }
+                  if (!targetCat.items) targetCat.items = [];
+                  if (!targetCat.items.some((i: any) => i.id === item.id)) {
+                    targetCat.items.push(item);
+                  }
+                } else {
+                  itemsToKeep.push(item);
+                }
+              });
+              cat.items = itemsToKeep;
+            }
+          });
+        }
+
+        return newState;
       }
 
       return { ...prev, [currentMonthKey]: updated };
@@ -308,7 +500,7 @@ const App: React.FC = () => {
               </div>
               <div className="min-w-0 flex-1">
                 <h1 className="text-[11px] xs:text-xs sm:text-2xl font-black text-white uppercase tracking-tighter sm:tracking-tight leading-none truncate">{currentData.profile?.name || 'ANIQ SUSILO'}</h1>
-                <p className="text-[8px] sm:text-sm font-black text-indigo-400 uppercase tracking-normal sm:tracking-widest mt-0.5 whitespace-nowrap">FINANCE MONTHLY</p>
+                <p className="text-[8px] sm:text-sm font-black text-indigo-400 uppercase tracking-normal sm:tracking-widest mt-0.5 whitespace-nowrap">{getBudgetPeriodLabel(currentDate).toUpperCase()}</p>
               </div>
             </div>
 
@@ -386,7 +578,8 @@ const App: React.FC = () => {
             />
           )}
           {activeTab === 'salary' && <SalarySlip data={currentData.salary} isPrivacy={isPrivacyMode} onChange={(s) => updateCurrentData({ salary: s })} />}
-          {activeTab === 'budget' && <Budget income={currentNetIncome} data={currentData.budget} isPrivacy={isPrivacyMode} onChange={(b) => updateCurrentData({ budget: b })} />}
+          {activeTab === 'budget' && <Budget income={currentNetIncome} data={currentData.budget} isPrivacy={isPrivacyMode} currentDate={currentDate} onChange={(b) => updateCurrentData({ budget: b })} />}
+          {activeTab === 'history' && <BudgetHistory data={currentData.budget} isPrivacy={isPrivacyMode} currentDate={currentDate} />}
           {activeTab === 'charts' && <MonthlyCharts budgetData={currentData.budget} appState={appState} income={currentNetIncome} isPrivacy={isPrivacyMode} />}
           {activeTab === 'invest' && <Investments items={currentData.investments} appState={appState} isPrivacy={isPrivacyMode} onChange={(i) => updateCurrentData({ investments: i })} />}
           {activeTab === 'year' && <YearlySummary appState={appState} year={currentDate.getFullYear()} isPrivacy={isPrivacyMode} />}

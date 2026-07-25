@@ -52,3 +52,39 @@ export const calculateGrossIncome = (
 export const calculateTax = (gross: number, rate: number) => {
   return gross * (rate / 100);
 };
+
+export const getBudgetMonth = (dateString: string | Date): string => {
+  if (!dateString) return '';
+  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+  if (isNaN(date.getTime())) return '';
+  
+  const day = date.getDate();
+  let year = date.getFullYear();
+  let month = date.getMonth(); // 0-indexed (0 is Jan, 11 is Dec)
+  
+  if (day >= 28) {
+    month += 1;
+    if (month > 11) {
+      month = 0;
+      year += 1;
+    }
+  }
+  return `${year}-${String(month + 1).padStart(2, '0')}`;
+};
+
+export const getBudgetPeriodLabel = (date: Date): string => {
+  const currentYear = date.getFullYear();
+  const currentMonth = date.getMonth(); // 0-indexed
+  
+  // Previous month details
+  const prevMonthDate = new Date(currentYear, currentMonth - 1, 1);
+  const prevMonthName = prevMonthDate.toLocaleString('id-ID', { month: 'short' });
+  const prevYear = prevMonthDate.getFullYear();
+  
+  // Current month details
+  const currentMonthName = date.toLocaleString('id-ID', { month: 'short' });
+  
+  const prevYearLabel = prevYear !== currentYear ? ` ${prevYear}` : '';
+  
+  return `28 ${prevMonthName}${prevYearLabel} - 27 ${currentMonthName} ${currentYear}`;
+};

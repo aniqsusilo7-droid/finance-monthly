@@ -1,0 +1,34 @@
+{
+  "entities": {
+    "MonthlyFinance": {
+      "title": "MonthlyFinance",
+      "description": "Monthly financial tracking data representing budget, salary, investments, etc.",
+      "type": "object",
+      "properties": {
+        "month_id": {
+          "type": "string",
+          "description": "Year and Month key, format resembling YYYY-MM"
+        },
+        "data": {
+          "type": "object",
+          "description": "The custom JSON state containing salary, budget, investments, etc."
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last updated timestamp"
+        }
+      },
+      "required": [
+        "month_id",
+        "data"
+      ]
+    }
+  },
+  "firestore": {
+    "/monthly_finance/{monthId}": {
+      "schema": "MonthlyFinance",
+      "description": "Collection storing documents representing monthly finance data indexed by month key"
+    }
+  }
+}

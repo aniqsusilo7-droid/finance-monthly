@@ -1,139 +1,252 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#4F46E5" />
     <link rel="manifest" href="/manifest.json" />
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5501/5501360.png">
+    <link
+      rel="apple-touch-icon"
+      href="https://cdn-icons-png.flaticon.com/512/5501/5501360.png"
+    />
     <title>MONTHLY FINANCE TRACKER</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-       /* Custom Font Setup */
-       @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
-       
-       :root {
-         --bg-app: #0f172a;
-         --bg-panel: rgba(30, 41, 59, 0.7);
-         --text-primary: #f1f5f9;
-         --text-secondary: #94a3b8;
-         --border-main: rgba(255, 255, 255, 0.1);
-         --bg-input: rgba(15, 23, 42, 0.5);
-         --shadow-panel: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
-         --chart-label: #FFFFFF;
-         --chart-grid: rgba(255, 255, 255, 0.1);
-         --tooltip-bg: #0f172a;
-       }
+      /* Custom Font Setup */
+      @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
 
-       [data-theme='light'] {
-         --bg-app: #f1f5f9;
-         --bg-panel: rgba(255, 255, 255, 0.95);
-         --text-primary: #020617;
-         --text-secondary: #475569;
-         --border-main: rgba(0, 0, 0, 0.15);
-         --bg-input: #ffffff;
-         --shadow-panel: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
-         --chart-label: #020617;
-         --chart-grid: rgba(0, 0, 0, 0.1);
-         --tooltip-bg: #ffffff;
-       }
+      :root {
+        --bg-app: #030712; /* Premium Deep Obsidian */
+        --bg-gradient: radial-gradient(
+          circle at 50% 0%,
+          rgba(99, 102, 241, 0.15) 0%,
+          rgba(16, 185, 129, 0.02) 45%,
+          rgba(3, 7, 18, 1) 100%
+        );
+        --bg-panel: rgba(17, 24, 39, 0.6); /* Semi-transparent Glass Panel */
+        --text-primary: #f3f4f6;
+        --text-secondary: #9ca3af;
+        --border-main: rgba(255, 255, 255, 0.05);
+        --border-glow: rgba(99, 102, 241, 0.2);
+        --bg-input: rgba(10, 15, 30, 0.7);
+        --shadow-panel: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        --chart-label: #f3f4f6;
+        --chart-grid: rgba(255, 255, 255, 0.04);
+        --tooltip-bg: #0b0f19;
+      }
 
-       body {
-         font-family: 'Plus Jakarta Sans', sans-serif;
-         background-color: var(--bg-app);
-         color: var(--text-primary);
-         font-weight: 800;
-         transition: background-color 0.4s ease, color 0.4s ease;
-       }
+      [data-theme="light"] {
+        --bg-app: #f8fafc; /* Immaculate Slate White */
+        --bg-gradient: radial-gradient(
+          circle at 50% 0%,
+          rgba(99, 102, 241, 0.05) 0%,
+          rgba(248, 250, 252, 1) 100%
+        );
+        --bg-panel: rgba(255, 255, 255, 0.85); /* Pure Snow Glass */
+        --text-primary: #0f172a;
+        --text-secondary: #475569;
+        --border-main: rgba(15, 23, 42, 0.07);
+        --border-glow: rgba(99, 102, 241, 0.1);
+        --bg-input: #ffffff;
+        --shadow-panel: 0 20px 40px -15px rgba(15, 23, 42, 0.08);
+        --chart-label: #0f172a;
+        --chart-grid: rgba(15, 23, 42, 0.05);
+        --tooltip-bg: #ffffff;
+      }
 
-       /* Global boldness for all elements */
-       * {
-         font-weight: 800 !important;
-       }
+      body {
+        font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+        background: var(--bg-gradient);
+        background-color: var(--bg-app);
+        color: var(--text-primary);
+        font-weight: 500;
+        transition:
+          background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+          color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+          background 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
 
-       .theme-transition {
-         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-       }
+      /* Premium Typography Pairings */
+      h1, h2, h3, h4, h5, h6, .font-heading {
+        font-family: "Outfit", system-ui, sans-serif !important;
+        letter-spacing: -0.02em !important;
+      }
 
-       .animate-fadeIn {
-         animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-       }
+      .font-mono {
+        font-family: "JetBrains Mono", monospace !important;
+      }
 
-       .animate-bounce-slow {
-         animation: bounce-slow 3s infinite;
-       }
+      .theme-transition {
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
 
-       @keyframes bounce-slow {
-         0%, 100% { transform: translateY(0); }
-         50% { transform: translateY(-10px); }
-       }
+      .animate-fadeIn {
+        animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
 
-       .glass-panel {
-         background: var(--bg-panel);
-         backdrop-filter: blur(20px);
-         -webkit-backdrop-filter: blur(20px);
-         border: 1px solid var(--border-main);
-         box-shadow: var(--shadow-panel);
-         transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
-       }
-       
-       @keyframes fadeIn {
-         from { opacity: 0; transform: translateY(20px); }
-         to { opacity: 1; transform: translateY(0); }
-       }
+      .animate-bounce-slow {
+        animation: bounce-slow 3s infinite;
+      }
 
-       ::-webkit-scrollbar {
-         width: 8px;
-       }
-       ::-webkit-scrollbar-track {
-         background: var(--bg-app);
-       }
-       ::-webkit-scrollbar-thumb {
-         background: #475569;
-         border-radius: 10px;
-       }
-       ::-webkit-scrollbar-thumb:hover {
-         background: #64748b;
-       }
+      @keyframes bounce-slow {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-6px);
+        }
+      }
 
-       /* High Contrast Overrides for Light Mode */
-       [data-theme='light'] .text-white { color: #020617 !important; }
-       [data-theme='light'] .text-slate-100 { color: #020617 !important; }
-       [data-theme='light'] .text-slate-200 { color: #0f172a !important; }
-       [data-theme='light'] .text-slate-300 { color: #1e293b !important; }
-       [data-theme='light'] .text-slate-400 { color: #334155 !important; }
-       [data-theme='light'] .text-slate-500 { color: #475569 !important; }
-       
-       [data-theme='light'] .bg-slate-900 { background-color: #f8fafc !important; border-color: rgba(0,0,0,0.1) !important; }
-       [data-theme='light'] .bg-slate-800 { background-color: #f1f5f9 !important; border-color: rgba(0,0,0,0.1) !important; }
-       [data-theme='light'] .bg-slate-950 { background-color: #ffffff !important; }
-       
-       [data-theme='light'] .border-slate-700 { border-color: rgba(0,0,0,0.15) !important; }
-       [data-theme='light'] .border-white\/5 { border-color: rgba(0,0,0,0.08) !important; }
-       [data-theme='light'] .border-white\/10 { border-color: rgba(0,0,0,0.15) !important; }
-       [data-theme='light'] .border-white\/20 { border-color: rgba(0,0,0,0.2) !important; }
+      /* Deluxe Glass Panels with subtle interactive glow & lift */
+      .glass-panel {
+        background: var(--bg-panel);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--border-main);
+        box-shadow: var(--shadow-panel);
+        transition:
+          background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+          border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+          box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+          transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
 
-       /* Charts specific overrides */
-       [data-theme='light'] .recharts-cartesian-grid-horizontal line,
-       [data-theme='light'] .recharts-cartesian-grid-vertical line {
-         stroke: var(--chart-grid);
-       }
+      .glass-panel:hover {
+        border-color: var(--border-glow);
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Minimal Scrollbars */
+      ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(148, 163, 184, 0.25);
+        border-radius: 99px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(148, 163, 184, 0.4);
+      }
+
+      /* High Contrast Overrides for Light Mode */
+      [data-theme="light"] .text-white {
+        color: #0f172a !important;
+      }
+      [data-theme="light"] .text-slate-100 {
+        color: #0f172a !important;
+      }
+      [data-theme="light"] .text-slate-200 {
+        color: #1e293b !important;
+      }
+      [data-theme="light"] .text-slate-300 {
+        color: #334155 !important;
+      }
+      [data-theme="light"] .text-slate-400 {
+        color: #475569 !important;
+      }
+      [data-theme="light"] .text-slate-500 {
+        color: #64748b !important;
+      }
+
+      [data-theme="light"] .bg-slate-900 {
+        background-color: #f1f5f9 !important;
+        border-color: rgba(15, 23, 42, 0.08) !important;
+      }
+      [data-theme="light"] .bg-slate-800 {
+        background-color: #e2e8f0 !important;
+        border-color: rgba(15, 23, 42, 0.08) !important;
+      }
+      [data-theme="light"] .bg-slate-950 {
+        background-color: #ffffff !important;
+      }
+
+      [data-theme="light"] .border-slate-700 {
+        border-color: rgba(15, 23, 42, 0.08) !important;
+      }
+      [data-theme="light"] .border-white\/5 {
+        border-color: rgba(15, 23, 42, 0.05) !important;
+      }
+      [data-theme="light"] .border-white\/10 {
+        border-color: rgba(15, 23, 42, 0.08) !important;
+      }
+      [data-theme="light"] .border-white\/20 {
+        border-color: rgba(15, 23, 42, 0.12) !important;
+      }
+
+      /* Charts specific overrides */
+      [data-theme="light"] .recharts-cartesian-grid-horizontal line,
+      [data-theme="light"] .recharts-cartesian-grid-vertical line {
+        stroke: var(--chart-grid);
+      }
+
+      /* Modern Forms & Interactive Inputs styling overrides */
+      input, select, textarea {
+        background-color: var(--bg-input) !important;
+        color: var(--text-primary) !important;
+        border: 1px solid var(--border-main) !important;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+      }
+      input:focus, select:focus, textarea:focus {
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+        outline: none !important;
+      }
+      
+      /* Make tables look extremely sharp */
+      table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+      
+      th {
+        font-family: "Outfit", sans-serif !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.05em !important;
+        text-transform: uppercase;
+      }
+      
+      tr:hover td {
+        background-color: rgba(255, 255, 255, 0.02);
+      }
+      [data-theme="light"] tr:hover td {
+        background-color: rgba(0, 0, 0, 0.01);
+      }
     </style>
-</head>
+  </head>
   <body>
     <div id="root"></div>
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-              console.log('ServiceWorker registration successful');
-            }, (err) => {
-              console.log('ServiceWorker registration failed: ', err);
-            });
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/sw.js").then(
+            (registration) => {
+              console.log("ServiceWorker registration successful");
+            },
+            (err) => {
+              console.log("ServiceWorker registration failed: ", err);
+            },
+          );
         });
       }
     </script>
-  <script type="module" src="/index.tsx"></script>
-</body>
+    <script type="module" src="/index.tsx"></script>
+  </body>
 </html>

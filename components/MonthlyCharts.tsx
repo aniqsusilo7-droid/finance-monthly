@@ -84,12 +84,30 @@ const MonthlyCharts: React.FC<MonthlyChartsProps> = ({ budgetData, appState, inc
     }
   };
 
-  addCategory(budgetData.needs?.name || 'Pokok', budgetData.needs?.items?.reduce((a, b) => a + (b.budget || 0), 0) || 0, budgetData.needs?.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0, CATEGORY_COLORS['Pokok']);
-  addCategory(budgetData.savings?.name || 'Tabungan', budgetData.savings?.items?.reduce((a, b) => a + (b.budget || 0), 0) || 0, budgetData.savings?.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0, CATEGORY_COLORS['Tabungan']);
-  addCategory(budgetData.debt?.name || 'Cicilan', budgetData.debt?.items?.reduce((a, b) => a + (b.budget || 0), 0) || 0, budgetData.debt?.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0, CATEGORY_COLORS['Cicilan']);
+  addCategory(
+    budgetData.needs?.name || 'Pokok', 
+    (budgetData.needs?.limit !== undefined && budgetData.needs.limit > 0) ? budgetData.needs.limit : (budgetData.needs?.items?.reduce((a, b) => a + (b.budget || 0), 0) || 0), 
+    budgetData.needs?.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0, 
+    CATEGORY_COLORS['Pokok']
+  );
+  addCategory(
+    budgetData.savings?.name || 'Tabungan', 
+    (budgetData.savings?.limit !== undefined && budgetData.savings.limit > 0) ? budgetData.savings.limit : (budgetData.savings?.items?.reduce((a, b) => a + (b.budget || 0), 0) || 0), 
+    budgetData.savings?.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0, 
+    CATEGORY_COLORS['Tabungan']
+  );
+  addCategory(
+    budgetData.debt?.name || 'Cicilan', 
+    (budgetData.debt?.limit !== undefined && budgetData.debt.limit > 0) ? budgetData.debt.limit : (budgetData.debt?.items?.reduce((a, b) => a + (b.budget || 0), 0) || 0), 
+    budgetData.debt?.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0, 
+    CATEGORY_COLORS['Cicilan']
+  );
 
   budgetData.custom?.forEach((cat, idx) => {
-    addCategory(cat.name || 'Custom', cat.items?.reduce((a, b) => a + (b.budget || 0), 0) || 0, cat.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0, EXTRA_COLORS[idx % EXTRA_COLORS.length]);
+    const catBudget = (cat.limit !== undefined && cat.limit > 0) 
+      ? cat.limit 
+      : (cat.items?.reduce((a, b) => a + (b.budget || 0), 0) || 0);
+    addCategory(cat.name || 'Custom', catBudget, cat.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0, EXTRA_COLORS[idx % EXTRA_COLORS.length]);
   });
 
   addCategory('Lainnya', budgetData.others?.allocation || 0, budgetData.others?.items?.reduce((a, b) => a + (b.actual || 0), 0) || 0, CATEGORY_COLORS['Lainnya']);

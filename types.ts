@@ -32,22 +32,26 @@ export interface BudgetItem {
   name: string;
   budget: number;
   actual: number;
+  date?: string;
 }
 
 export interface OtherBudgetItem {
   id: string;
   name: string;
   actual: number;
+  date?: string;
 }
 
 export interface BudgetCategory {
   items: BudgetItem[];
   name?: string;
+  limit?: number;
 }
 
 export interface CustomBudgetCategory extends BudgetCategory {
   id: string;
   name: string;
+  limit?: number;
 }
 
 export interface OtherBudgetCategory {
