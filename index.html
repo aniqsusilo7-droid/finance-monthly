@@ -2,13 +2,28 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#4F46E5" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f172a" />
+    
+    <!-- PWA Web App Manifest -->
     <link rel="manifest" href="/manifest.json" />
-    <link
-      rel="apple-touch-icon"
-      href="https://cdn-icons-png.flaticon.com/512/5501/5501360.png"
-    />
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/5501/5501360.png" />
+    
+    <!-- Apple iOS Safari & iPhone PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Finance Tracker" />
+    <meta name="apple-touch-fullscreen" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="Finance Tracker" />
+    <meta name="format-detection" content="telephone=no" />
+    
+    <!-- Apple Touch Icons for iPhone / iPad Home Screen -->
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5501/5501360.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="https://cdn-icons-png.flaticon.com/512/5501/5501360.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="https://cdn-icons-png.flaticon.com/512/5501/5501360.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="https://cdn-icons-png.flaticon.com/512/5501/5501360.png" />
+    
     <title>MONTHLY FINANCE TRACKER</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -16,41 +31,63 @@
       @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap");
 
       :root {
-        --bg-app: #030712; /* Premium Deep Obsidian */
+        --bg-app: #0f172a; /* Slate 900 bright obsidian canvas */
         --bg-gradient: radial-gradient(
           circle at 50% 0%,
-          rgba(99, 102, 241, 0.15) 0%,
-          rgba(16, 185, 129, 0.02) 45%,
-          rgba(3, 7, 18, 1) 100%
+          rgba(99, 102, 241, 0.25) 0%,
+          rgba(14, 165, 233, 0.08) 45%,
+          #0f172a 100%
         );
-        --bg-panel: rgba(17, 24, 39, 0.6); /* Semi-transparent Glass Panel */
-        --text-primary: #f3f4f6;
-        --text-secondary: #9ca3af;
-        --border-main: rgba(255, 255, 255, 0.05);
-        --border-glow: rgba(99, 102, 241, 0.2);
-        --bg-input: rgba(10, 15, 30, 0.7);
-        --shadow-panel: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-        --chart-label: #f3f4f6;
-        --chart-grid: rgba(255, 255, 255, 0.04);
-        --tooltip-bg: #0b0f19;
+        --bg-panel: rgba(30, 41, 59, 0.78); /* High clarity slate-800 glass */
+        --bg-card-subtle: rgba(51, 65, 85, 0.6);
+        --text-primary: #f8fafc;
+        --text-secondary: #cbd5e1;
+        --border-main: rgba(255, 255, 255, 0.12);
+        --border-glow: rgba(99, 102, 241, 0.5);
+        --bg-input: rgba(15, 23, 42, 0.85);
+        --shadow-panel: 0 15px 35px -5px rgba(0, 0, 0, 0.45), 0 0 1px 1px rgba(255, 255, 255, 0.08);
+        --chart-label: #f8fafc;
+        --chart-grid: rgba(255, 255, 255, 0.07);
+        --tooltip-bg: #0f172a;
+      }
+
+      /* iOS Safe Area & Native App Feel */
+      html {
+        -webkit-text-size-adjust: 100%;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      :root {
+        --sat: env(safe-area-inset-top, 0px);
+        --sab: env(safe-area-inset-bottom, 0px);
+        --sal: env(safe-area-inset-left, 0px);
+        --sar: env(safe-area-inset-right, 0px);
+      }
+
+      body {
+        padding-left: env(safe-area-inset-left, 0px);
+        padding-right: env(safe-area-inset-right, 0px);
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
       }
 
       [data-theme="light"] {
-        --bg-app: #f8fafc; /* Immaculate Slate White */
+        --bg-app: #f1f5f9; /* Bright Crisp Slate Canvas */
         --bg-gradient: radial-gradient(
           circle at 50% 0%,
-          rgba(99, 102, 241, 0.05) 0%,
-          rgba(248, 250, 252, 1) 100%
+          rgba(99, 102, 241, 0.12) 0%,
+          rgba(241, 245, 249, 1) 100%
         );
-        --bg-panel: rgba(255, 255, 255, 0.85); /* Pure Snow Glass */
+        --bg-panel: rgba(255, 255, 255, 0.95); /* Pure luminous crystal glass */
+        --bg-card-subtle: #ffffff;
         --text-primary: #0f172a;
-        --text-secondary: #475569;
-        --border-main: rgba(15, 23, 42, 0.07);
-        --border-glow: rgba(99, 102, 241, 0.1);
+        --text-secondary: #334155;
+        --border-main: rgba(15, 23, 42, 0.1);
+        --border-glow: rgba(99, 102, 241, 0.35);
         --bg-input: #ffffff;
-        --shadow-panel: 0 20px 40px -15px rgba(15, 23, 42, 0.08);
+        --shadow-panel: 0 15px 35px -8px rgba(15, 23, 42, 0.08), 0 0 1px 1px rgba(15, 23, 42, 0.05);
         --chart-label: #0f172a;
-        --chart-grid: rgba(15, 23, 42, 0.05);
+        --chart-grid: rgba(15, 23, 42, 0.06);
         --tooltip-bg: #ffffff;
       }
 

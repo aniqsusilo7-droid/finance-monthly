@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { BudgetData } from "../types";
-import { formatRupiah } from "../utils";
+import { formatRupiah, formatDateToLocalISO } from "../utils";
 import {
   Calendar,
   History,
@@ -34,31 +34,31 @@ export const BudgetHistory: React.FC<BudgetHistoryProps> = ({
   };
 
   const defaultDate = React.useMemo(() => {
-    if (!currentDate) return new Date().toISOString().split("T")[0];
+    if (!currentDate) return formatDateToLocalISO(new Date());
 
     const today = new Date();
     const selectedYear = currentDate.getFullYear();
     const selectedMonth = currentDate.getMonth(); // 0-indexed
 
-    // Today's custom budget month mapping
+    // Today's custom budget month mapping (28 Dec - 27 Jan belongs to Dec)
     const todayDay = today.getDate();
     let todayBudgetMonth = today.getMonth();
     let todayBudgetYear = today.getFullYear();
-    if (todayDay >= 28) {
-      todayBudgetMonth += 1;
-      if (todayBudgetMonth > 11) {
-        todayBudgetMonth = 0;
-        todayBudgetYear += 1;
+    if (todayDay < 28) {
+      todayBudgetMonth -= 1;
+      if (todayBudgetMonth < 0) {
+        todayBudgetMonth = 11;
+        todayBudgetYear -= 1;
       }
     }
 
     if (todayBudgetMonth === selectedMonth && todayBudgetYear === selectedYear) {
-      return today.toISOString().split("T")[0];
+      return formatDateToLocalISO(today);
     }
 
-    // Fallback: 1st of the selected month
-    const fallbackDate = new Date(selectedYear, selectedMonth, 1);
-    return fallbackDate.toISOString().split("T")[0];
+    // Fallback: 28th of the selected month
+    const fallbackDate = new Date(selectedYear, selectedMonth, 28);
+    return formatDateToLocalISO(fallbackDate);
   }, [currentDate]);
 
   const realizedItems = React.useMemo(() => {

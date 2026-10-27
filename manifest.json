@@ -1,16 +1,22 @@
 {
   "name": "MONTHLY FINANCE TRACKER",
   "short_name": "Finance Tracker",
+  "description": "Aplikasi pelacak keuangan bulanan, slip gaji, anggaran keluarga, dan portofolio investasi.",
+  "id": "com.financetracker.monthly",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#F8FAFC",
-  "theme_color": "#4F46E5",
+  "display_override": ["standalone", "fullscreen", "minimal-ui"],
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
   "orientation": "portrait",
+  "categories": ["finance", "productivity", "utilities"],
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/5501/5501360.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "https://cdn-icons-png.flaticon.com/512/5501/5501360.png",

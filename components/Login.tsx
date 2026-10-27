@@ -105,7 +105,15 @@ const Login: React.FC<LoginProps> = ({ onAuthenticated }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-[#020617] selection:bg-indigo-500/30 overflow-hidden relative">
+    <div 
+      className="min-h-screen flex items-center justify-center p-4 bg-[#020617] selection:bg-indigo-500/30 overflow-hidden relative"
+      style={{
+        paddingTop: 'max(calc(env(safe-area-inset-top, 0px) + 1.25rem), 1.5rem)',
+        paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 1.25rem), 1.5rem)',
+        paddingLeft: 'max(env(safe-area-inset-left, 0px), 1rem)',
+        paddingRight: 'max(env(safe-area-inset-right, 0px), 1rem)'
+      }}
+    >
       {/* Immersive Background */}
       <div className="absolute inset-0 z-0">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/20 rounded-full blur-[120px] animate-pulse"></div>

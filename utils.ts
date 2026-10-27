@@ -53,20 +53,56 @@ export const calculateTax = (gross: number, rate: number) => {
   return gross * (rate / 100);
 };
 
+export const formatDateToLocalISO = (date: Date = new Date()): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+export const getInitialBudgetMonthDate = (today: Date = new Date()): Date => {
+  const day = today.getDate();
+  let month = today.getMonth();
+  let year = today.getFullYear();
+  if (day < 28) {
+    month -= 1;
+    if (month < 0) {
+      month = 11;
+      year -= 1;
+    }
+  }
+  return new Date(year, month, 1);
+};
+
 export const getBudgetMonth = (dateString: string | Date): string => {
   if (!dateString) return '';
-  const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+  let date: Date;
+  if (typeof dateString === 'string') {
+    const parts = dateString.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      date = new Date(year, month, day);
+    } else {
+      date = new Date(dateString);
+    }
+  } else {
+    date = dateString;
+  }
   if (isNaN(date.getTime())) return '';
   
   const day = date.getDate();
   let year = date.getFullYear();
   let month = date.getMonth(); // 0-indexed (0 is Jan, 11 is Dec)
   
-  if (day >= 28) {
-    month += 1;
-    if (month > 11) {
-      month = 0;
-      year += 1;
+  // Cutoff cycle: 28 Dec - 27 Jan belongs to December (month M)
+  // If day < 28, it belongs to month M - 1 (e.g. 15 Jan belongs to Dec)
+  if (day < 28) {
+    month -= 1;
+    if (month < 0) {
+      month = 11;
+      year -= 1;
     }
   }
   return `${year}-${String(month + 1).padStart(2, '0')}`;
@@ -76,15 +112,17 @@ export const getBudgetPeriodLabel = (date: Date): string => {
   const currentYear = date.getFullYear();
   const currentMonth = date.getMonth(); // 0-indexed
   
-  // Previous month details
-  const prevMonthDate = new Date(currentYear, currentMonth - 1, 1);
-  const prevMonthName = prevMonthDate.toLocaleString('id-ID', { month: 'short' });
-  const prevYear = prevMonthDate.getFullYear();
+  // Start date: 28th of current budget month
+  const startDate = new Date(currentYear, currentMonth, 28);
+  const startMonthName = startDate.toLocaleString('id-ID', { month: 'short' });
+  const startYear = startDate.getFullYear();
   
-  // Current month details
-  const currentMonthName = date.toLocaleString('id-ID', { month: 'short' });
+  // End date: 27th of next month
+  const endDate = new Date(currentYear, currentMonth + 1, 27);
+  const endMonthName = endDate.toLocaleString('id-ID', { month: 'short' });
+  const endYear = endDate.getFullYear();
   
-  const prevYearLabel = prevYear !== currentYear ? ` ${prevYear}` : '';
+  const startYearLabel = startYear !== endYear ? ` ${startYear}` : '';
   
-  return `28 ${prevMonthName}${prevYearLabel} - 27 ${currentMonthName} ${currentYear}`;
+  return `28 ${startMonthName}${startYearLabel} - 27 ${endMonthName} ${endYear}`;
 };

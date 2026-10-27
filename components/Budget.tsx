@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { BudgetData, BudgetItem } from "../types";
 import CurrencyInput from "./ui/CurrencyInput";
 import DeleteModal from "./ui/DeleteModal";
-import { formatRupiah } from "../utils";
+import { formatRupiah, formatDateToLocalISO } from "../utils";
 import {
   ChevronDown,
   ChevronUp,
@@ -21,6 +21,7 @@ import {
   Target,
   Layers,
   Sparkles,
+  Zap,
 } from "lucide-react";
 
 interface BudgetProps {
@@ -29,6 +30,7 @@ interface BudgetProps {
   isPrivacy?: boolean;
   onChange: (data: BudgetData) => void;
   currentDate?: Date;
+  onOpenQuickExpense?: () => void;
 }
 
 interface CategorySectionProps {
@@ -431,11 +433,11 @@ const CategorySection: React.FC<CategorySectionProps> = ({
               onUpdateItems([
                 ...(items || []),
                 {
-                  id: Date.now().toString(),
+                  id: Date.now().toString() + "-" + Math.random().toString(36).substring(2, 7),
                   name: "",
                   budget: 0,
                   actual: 0,
-                  date: defaultDate || new Date().toISOString().split("T")[0],
+                  date: defaultDate || formatDateToLocalISO(new Date()),
                 },
               ])
             }
@@ -786,35 +788,36 @@ const Budget: React.FC<BudgetProps> = ({
   isPrivacy = false,
   onChange,
   currentDate,
+  onOpenQuickExpense,
 }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const defaultDate = React.useMemo(() => {
-    if (!currentDate) return new Date().toISOString().split("T")[0];
+    if (!currentDate) return formatDateToLocalISO(new Date());
     
     const today = new Date();
     const selectedYear = currentDate.getFullYear();
     const selectedMonth = currentDate.getMonth(); // 0-indexed
     
-    // Today's custom budget month mapping
+    // Today's custom budget month mapping (28 Dec - 27 Jan belongs to Dec)
     const todayDay = today.getDate();
     let todayBudgetMonth = today.getMonth();
     let todayBudgetYear = today.getFullYear();
-    if (todayDay >= 28) {
-      todayBudgetMonth += 1;
-      if (todayBudgetMonth > 11) {
-        todayBudgetMonth = 0;
-        todayBudgetYear += 1;
+    if (todayDay < 28) {
+      todayBudgetMonth -= 1;
+      if (todayBudgetMonth < 0) {
+        todayBudgetMonth = 11;
+        todayBudgetYear -= 1;
       }
     }
     
     if (todayBudgetMonth === selectedMonth && todayBudgetYear === selectedYear) {
-      return today.toISOString().split("T")[0];
+      return formatDateToLocalISO(today);
     }
     
-    // Fallback: 1st of the selected month
-    const fallbackDate = new Date(selectedYear, selectedMonth, 1);
-    return fallbackDate.toISOString().split("T")[0];
+    // Fallback: 28th of the selected month (start of budget cycle)
+    const fallbackDate = new Date(selectedYear, selectedMonth, 28);
+    return formatDateToLocalISO(fallbackDate);
   }, [currentDate]);
 
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
@@ -1025,6 +1028,17 @@ const Budget: React.FC<BudgetProps> = ({
           ALOKASI ANGGARAN
         </h2>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          {onOpenQuickExpense && (
+            <button
+              type="button"
+              onClick={onOpenQuickExpense}
+              className="px-5 py-3 sm:px-6 sm:py-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 text-white rounded-xl sm:rounded-2xl text-[10px] sm:text-xs font-black flex items-center justify-center gap-2 uppercase tracking-widest transition-all hover:from-emerald-500 hover:to-indigo-500 shadow-lg shadow-emerald-900/30 active:scale-95"
+              title="Input Cepat Pengeluaran via Ketik, WhatsApp, atau Suara"
+            >
+              <Zap size={16} className="text-amber-300 animate-pulse" />
+              <span>⚡ INPUT CEPAT (KETIK/WA/AI)</span>
+            </button>
+          )}
           {hasMissingDefaults && (
             <button
               onClick={restoreDefaults}
@@ -1224,7 +1238,7 @@ const Budget: React.FC<BudgetProps> = ({
             custom: [
               ...(data.custom || []),
               {
-                id: Date.now().toString(),
+                id: Date.now().toString() + "-" + Math.random().toString(36).substring(2, 7),
                 name,
                 limit,
                 items: [],
@@ -1429,10 +1443,10 @@ const OthersSection: React.FC<{
                 items: [
                   ...(data.items || []),
                   {
-                    id: Date.now().toString(),
+                    id: Date.now().toString() + "-" + Math.random().toString(36).substring(2, 7),
                     name: "",
                     actual: 0,
-                    date: defaultDate || new Date().toISOString().split("T")[0],
+                    date: defaultDate || formatDateToLocalISO(new Date()),
                   },
                 ],
               })

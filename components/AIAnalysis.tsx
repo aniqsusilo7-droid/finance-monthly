@@ -1,22 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { GoogleGenAI } from "@google/genai";
-import { MonthlyData } from '../types';
+import Markdown from 'react-markdown';
+import { MonthlyData, BudgetCategory } from '../types';
 import { formatRupiah } from '../utils';
 import { 
   Sparkles, BrainCircuit, RefreshCw, AlertCircle, 
   CheckCircle2, Wifi, KeyRound, Eye, EyeOff, Settings, 
-  X, Lock, ExternalLink, Copy, Check
+  X, Lock, ExternalLink, Copy, Check, Filter, TrendingDown,
+  PieChart, ShieldCheck, Target, ArrowUpRight
 } from 'lucide-react';
+import { motion } from 'motion/react';
 
 interface AIAnalysisProps {
   currentMonthData: MonthlyData;
   netIncome: number;
 }
 
+type AnalysisMode = 'full' | 'savings' | 'efficiency';
+
 const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) => {
   const [analysis, setAnalysis] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [analysisMode, setAnalysisMode] = useState<AnalysisMode>('full');
+  const [isCopiedReport, setIsCopiedReport] = useState(false);
 
   // Manual API Key State
   const [apiKeyInput, setApiKeyInput] = useState(() => {
@@ -71,8 +78,117 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) 
 
   const currentActiveKey = apiKeyInput.trim() || import.meta.env.VITE_GEMINI_API_KEY || '';
 
+  // Helper to compile rich structured financial context for Gemini
+  const prepareComprehensiveFinancialData = () => {
+    const { salary, budget, investments = [], overtimeEntries = [], profile } = currentMonthData || {};
+
+    const processCategory = (catName: string, cat?: BudgetCategory) => {
+      const items = (cat?.items || []).map(i => {
+        const bg = i.budget || 0;
+        const ac = i.actual || 0;
+        return {
+          nama_item: i.name || 'Tanpa Nama',
+          anggaran: formatRupiah(bg),
+          realisasi: formatRupiah(ac),
+          selisih: formatRupiah(bg - ac),
+          status: ac > bg && bg > 0 ? 'OVERBUDGET' : (ac > 0 ? 'TERPAKE' : 'BELUM TERPAKAI'),
+          tanggal: i.date || 'Tidak dicatat'
+        };
+      });
+
+      const totalBudget = (cat?.items || []).reduce((a, b) => a + (b.budget || 0), 0);
+      const totalActual = (cat?.items || []).reduce((a, b) => a + (b.actual || 0), 0);
+      const limit = cat?.limit || null;
+      const effectiveTarget = limit && limit > 0 ? limit : totalBudget;
+
+      return {
+        nama_pos: cat?.name || catName,
+        limit_kategori: limit ? formatRupiah(limit) : 'Tidak ada limit khusus',
+        total_anggaran_item: formatRupiah(totalBudget),
+        total_realisasi_aktual: formatRupiah(totalActual),
+        sisa_alokasi: formatRupiah(effectiveTarget - totalActual),
+        status_kategori: totalActual > effectiveTarget && effectiveTarget > 0 ? 'MEMBENGKAK / OVER' : 'AMAN',
+        jumlah_item: items.length,
+        daftar_item: items,
+        _rawActual: totalActual,
+        _rawBudget: totalBudget
+      };
+    };
+
+    const needs = processCategory("Kebutuhan Pokok", budget?.needs);
+    const savings = processCategory("Tabungan & Investasi", budget?.savings);
+    const debt = processCategory("Hutang & Cicilan", budget?.debt);
+
+    const customCategories = (budget?.custom || []).map((cat, idx) => 
+      processCategory(cat?.name || `Kategori Tambahan ${idx + 1}`, cat)
+    );
+
+    const othersItems = (budget?.others?.items || []).map(i => ({
+      keterangan: i.name || 'Pengeluaran Lain',
+      nominal: formatRupiah(i.actual || 0),
+      tanggal: i.date || 'Tidak dicatat'
+    }));
+    const othersActual = (budget?.others?.items || []).reduce((a, b) => a + (b.actual || 0), 0);
+    const othersAllocation = budget?.others?.allocation || 0;
+
+    const others = {
+      nama_pos: "Pengeluaran Lainnya / Tak Terduga",
+      alokasi: formatRupiah(othersAllocation),
+      total_realisasi: formatRupiah(othersActual),
+      sisa_alokasi: formatRupiah(othersAllocation - othersActual),
+      daftar_pengeluaran: othersItems
+    };
+
+    // Overall summary calculation using raw numbers
+    const totalNeedsActual = needs._rawActual;
+    const totalSavingsActual = savings._rawActual;
+    const totalDebtActual = debt._rawActual;
+    const totalCustomActual = customCategories.reduce((a, c) => a + c._rawActual, 0);
+    
+    const grandTotalActual = totalNeedsActual + totalSavingsActual + totalDebtActual + othersActual + totalCustomActual;
+
+    const netCashFlow = netIncome - grandTotalActual;
+    const savingsRate = netIncome > 0 ? ((totalSavingsActual + investments.reduce((a, b) => a + (b.currentValue || 0), 0)) / netIncome) * 100 : 0;
+    const debtRatio = netIncome > 0 ? (totalDebtActual / netIncome) * 100 : 0;
+
+    return {
+      profil_pengguna: profile?.name || "Aniq Susilo",
+      pemasukan: {
+        penghasilan_bersih_take_home_pay: formatRupiah(netIncome),
+        gaji_pokok: formatRupiah(salary?.basicSalary || 0),
+        tunjangan_tempat_tinggal: formatRupiah(salary?.housingAllowance || 0),
+        tunjangan_shift: formatRupiah(salary?.shiftAllowance || 0),
+        jam_lembur: salary?.overtimeHours || 0,
+        thr: formatRupiah(salary?.thr || 0),
+        bonus: salary?.bonusMultiplier ? `${salary.bonusMultiplier}x Gaji` : '0'
+      },
+      ringkasan_makro: {
+        total_pemasukan: formatRupiah(netIncome),
+        total_realisasi_pengeluaran_keseluruhan: formatRupiah(grandTotalActual),
+        sisa_arus_kas_neto: formatRupiah(netCashFlow),
+        rasio_tabungan: `${savingsRate.toFixed(1)}%`,
+        rasio_cicilan_hutang: `${debtRatio.toFixed(1)}%`
+      },
+      pos_pos_anggaran: {
+        kebutuhan_pokok: needs,
+        tabungan_dan_investasi: savings,
+        hutang_dan_cicilan: debt,
+        kategori_custom_tambahan: customCategories,
+        pengeluaran_lainnya: others
+      },
+      portofolio_investasi: (investments || []).map(inv => ({
+        nama_aset: inv.name,
+        nilai_saat_ini: formatRupiah(inv.currentValue || 0),
+        target_nilai: formatRupiah(inv.targetValue || 0),
+        pencapaian_persen: inv.targetValue > 0 ? `${Math.min(100, Math.round(((inv.currentValue || 0) / inv.targetValue) * 100))}%` : '0%'
+      })),
+      catatan_lembur: {
+        total_entri_lembur: overtimeEntries?.length || 0
+      }
+    };
+  };
+
   const generateAnalysis = async () => {
-    // 1. Cek Koneksi Internet
     if (!navigator.onLine) {
       setError("Koneksi internet tidak terdeteksi. Silakan periksa jaringan Anda.");
       return;
@@ -82,7 +198,6 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) 
     setError(null);
     
     try {
-      // Inisialisasi Gemini API secara aman (mendahulukan key manual dari user)
       const apiKey = localStorage.getItem('user_gemini_api_key')?.trim() || import.meta.env.VITE_GEMINI_API_KEY || '';
       if (!apiKey) {
         setIsConfigOpen(true);
@@ -90,37 +205,93 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) 
       }
 
       const ai = new GoogleGenAI({ apiKey });
-      
-      const budgetDetails = JSON.stringify({
-        income: formatRupiah(netIncome),
-        needs: currentMonthData.budget.needs?.items.map(i => ({ name: i.name, budget: i.budget, actual: i.actual })),
-        savings: currentMonthData.budget.savings?.items.map(i => ({ name: i.name, budget: i.budget, actual: i.actual })),
-        debt: currentMonthData.budget.debt?.items.map(i => ({ name: i.name, budget: i.budget, actual: i.actual })),
-        others: currentMonthData.budget.others?.items.map(i => ({ name: i.name, actual: i.actual })),
-        investments: currentMonthData.investments.map(i => ({ name: i.name, value: i.currentValue, target: i.targetValue }))
-      });
+      const financialContext = prepareComprehensiveFinancialData();
+      const budgetDetailsJson = JSON.stringify(financialContext, null, 2);
 
-      const prompt = `Bertindaklah sebagai Pakar Konsultan Keuangan Pribadi. 
-      Lakukan analisis mendalam pada data keuangan bulanan berikut untuk Aniq Susilo.
-      
-      Data Keuangan:
-      ${budgetDetails}
-      
-      Berikan respon dalam Bahasa Indonesia dengan struktur berikut:
-      1. Health Check: Evaluasi singkat kondisi bulan ini.
-      2. Budget Efficiency: Analisis apakah pengeluaran aktual sesuai dengan anggaran.
-      3. Aset & Investasi: Komentar tentang pertumbuhan aset.
-      4. 3 Action Steps: Langkah nyata untuk bulan depan.
-      
-      Gunakan format Markdown yang profesional dan mudah dibaca di smartphone.`;
+      let modePromptInstruction = "";
+      if (analysisMode === 'efficiency') {
+        modePromptInstruction = "FOKUS UTAMA: Lakukan audit ketat pada kebocoran anggaran, pengeluaran berlebihan (overbudget), dan identifikasi pos-pos mana saja yang bisa dipangkas untuk efisiensi maksimal.";
+      } else if (analysisMode === 'savings') {
+        modePromptInstruction = "FOKUS UTAMA: Lakukan analisis optimalisasi alokasi tabungan, pertumbuhan aset investasi, serta strategi percepatan pencapaian target keuangan jangka panjang.";
+      } else {
+        modePromptInstruction = "FOKUS UTAMA: Lakukan bedah komprehensif menyeluruh pada semua pos anggaran dan item pengeluaran secara seimbang dan mendalam.";
+      }
 
-      // Menggunakan gemini-3.5-flash sesuai rekomendasi skill
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.5-flash',
-        contents: prompt,
-      });
+      const prompt = `Bertindaklah sebagai Senior Certified Financial Planner (CFP) & Analis Keuangan Pribadi Tingkat Lanjut.
+Lakukan analisis **BEDAH MENDALAM DENGAN SANGAT COMPREHENSIVE DAN DETAIL** pada seluruh data keuangan bulanan milik ${financialContext.profil_pengguna}.
 
-      const text = response.text;
+${modePromptInstruction}
+
+CRITICAL REQUIREMENT: Anda WAJIB membedah SETIAP POS ANGGARAN (Kebutuhan Pokok, Tabungan & Investasi, Hutang & Cicilan, Kategori Custom/Tambahan, dan Pengeluaran Lainnya) beserta ITEM-ITEM DI DALAMNYA SATU PER SATU secara rinci. Jangan melewatkan kategori mana pun!
+
+Data Keuangan Lengkap & Terstruktur (JSON):
+\`\`\`json
+${budgetDetailsJson}
+\`\`\`
+
+Berikan laporan analisis dalam Bahasa Indonesia dengan format Markdown yang rapi, profesional, dan menggunakan struktur berikut:
+
+# 📊 1. RINGKASAN EKSEKUTIF & HEALTH CHECK KEUANGAN
+- **Skor Kesehatan Keuangan**: [Berikan Skor x/100 beserta status: SEHAT / WASPADA / KRITIS]
+- **Evaluasi Makro Arus Kas**: Bahas total pemasukan (${financialContext.ringkasan_makro.total_pemasukan}) vs total pengeluaran (${financialContext.ringkasan_makro.total_realisasi_pengeluaran_keseluruhan}) dan Sisa Arus Kas (${financialContext.ringkasan_makro.sisa_arus_kas_neto}).
+- **Indikator Rasio Utama**: Bahas Rasio Tabungan (${financialContext.ringkasan_makro.rasio_tabungan}) & Rasio Hutang (${financialContext.ringkasan_makro.rasio_cicilan_hutang}) terhadap norma keuangan ideal.
+
+# 🔍 2. BEDAH MENDALAM PER POS ANGGARAN & ITEM PENGELUARAN
+Ulas satu per satu secara terperinci setiap pos di bawah ini:
+
+### A. Pos Kebutuhan Pokok
+- Evaluasi Total Anggaran vs Realisasi & Limit.
+- Bedah item per item (sebutkan nama item, nominal anggaran vs realisasi).
+- Analisis item yang paling dominan, efisien, atau overbudget.
+
+### B. Pos Tabungan & Investasi
+- Evaluasi kedisiplinan alokasi masa depan.
+- Bedah item per item di dalam pos tabungan.
+
+### C. Pos Hutang & Cicilan
+- Evaluasi rasio beban cicilan bulanan.
+- Bedah item per item cicilan/hutang yang ada.
+
+### D. Pos Kategori Custom / Tambahan (PENTING)
+- Bedah setiap kategori custom yang dibuat pengguna satu per satu beserta limit & item pengeluaran di dalamnya. Jika tidak ada, berikan catatan.
+
+### E. Pos Pengeluaran Lainnya / Tak Terduga
+- Evaluasi pengeluaran insidental & barang/jasa acak yang dicatat.
+
+# ⚠️ 3. TOP EXPENSES & DETEKSI KEBOCORAN HALUS
+- **5 Pengeluaran Terbesar**: Sebutkan 5 item pengeluaran nominal terbesar bulan ini dan dampaknya pada arus kas.
+- **Anomali / Overbudget Alert**: Soroti item yang melebihi batas anggaran atau berpotensi menjadi kebocoran halus (latte factor).
+
+# 📈 4. PORTOFOLIO & PERTUMBUHAN ASET
+- Analisis perkembangan aset investasi (${financialContext.portofolio_investasi.length} instrumen) vs targetnya.
+- Saran diversifikasi atau akselerasi alokasi.
+
+# 💡 5. ACTION PLAN STRATEGIS (5 LANGKAH KONKRET BULAN DEPAN)
+1. [Langkah taktis 1]
+2. [Langkah taktis 2]
+3. [Langkah taktis 3]
+4. [Langkah taktis 4]
+5. [Langkah taktis 5]
+
+Gunakan bahasa yang lugas, empatik, berbasis data, dan terstruktur dengan bullet points serta cetak tebal untuk angka penting.`;
+
+      let text = '';
+      try {
+        // Primary model according to Gemini API guidance
+        const response = await ai.models.generateContent({
+          model: 'gemini-3.6-flash',
+          contents: prompt,
+        });
+        text = response.text || '';
+      } catch (firstErr) {
+        console.warn("gemini-3.6-flash failed, trying gemini-flash-latest fallback:", firstErr);
+        const responseFallback = await ai.models.generateContent({
+          model: 'gemini-flash-latest',
+          contents: prompt,
+        });
+        text = responseFallback.text || '';
+      }
+
       if (!text) {
         throw new Error("EMPTY_RESPONSE");
       }
@@ -143,6 +314,13 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) 
     }
   };
 
+  const handleCopyReport = () => {
+    if (!analysis) return;
+    navigator.clipboard.writeText(analysis);
+    setIsCopiedReport(true);
+    setTimeout(() => setIsCopiedReport(false), 2000);
+  };
+
   return (
     <div className="space-y-4 sm:space-y-6 animate-fadeIn pb-12">
       <div className="glass-panel p-6 sm:p-10 rounded-[2rem] sm:rounded-[2.5rem] border border-indigo-500/20 shadow-2xl relative overflow-hidden">
@@ -153,9 +331,43 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) 
             <BrainCircuit className="text-white w-8 h-8 sm:w-12 sm:h-12" />
           </div>
           <h2 className="text-lg sm:text-3xl font-black text-white uppercase tracking-tight mb-2">Financial AI Analyst</h2>
-          <p className="text-slate-400 max-w-sm font-bold text-[10px] sm:text-sm leading-relaxed mb-4 px-2">
-            Konsultasikan strategi keuangan bulanan Anda dengan kecerdasan buatan Gemini AI.
+          <p className="text-slate-400 max-w-lg font-bold text-[10px] sm:text-sm leading-relaxed mb-6 px-2">
+            Bedah secara mendalam seluruh pos anggaran, item pengeluaran, serta portofolio investasi Anda dengan rekomendasi taktis dari Gemini AI.
           </p>
+
+          {/* Mode Analisis Selector */}
+          <div className="w-full max-w-xl bg-slate-950/60 p-1.5 rounded-2xl border border-white/10 flex items-center justify-between mb-6 text-[10px] sm:text-xs font-black uppercase">
+            <button
+              onClick={() => setAnalysisMode('full')}
+              className={`flex-1 py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all ${
+                analysisMode === 'full' 
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <PieChart size={14} /> Bedah Komprehensif
+            </button>
+            <button
+              onClick={() => setAnalysisMode('efficiency')}
+              className={`flex-1 py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all ${
+                analysisMode === 'efficiency' 
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <TrendingDown size={14} /> Audit Efisiensi
+            </button>
+            <button
+              onClick={() => setAnalysisMode('savings')}
+              className={`flex-1 py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 transition-all ${
+                analysisMode === 'savings' 
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Target size={14} /> Optimalisasi Aset
+            </button>
+          </div>
 
           {/* Status API Key & Toggle Setup */}
           <div className="mb-6 flex flex-wrap items-center justify-center gap-2">
@@ -291,17 +503,17 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) 
           <button 
             onClick={generateAnalysis}
             disabled={isLoading}
-            className="w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl sm:rounded-2xl font-black uppercase text-[10px] sm:text-xs tracking-widest transition-all shadow-lg active:scale-95 disabled:opacity-50"
+            className="w-full sm:w-auto flex items-center justify-center gap-3 px-10 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl sm:rounded-2xl font-black uppercase text-[10px] sm:text-xs tracking-widest transition-all shadow-lg shadow-indigo-600/30 active:scale-95 disabled:opacity-50"
           >
             {isLoading ? (
               <>
                 <RefreshCw className="w-4 h-4 animate-spin" />
-                Menganalisis...
+                Membedah Seluruh Pos Anggaran...
               </>
             ) : (
               <>
                 <Sparkles className="w-4 h-4" />
-                Mulai Analisis
+                Mulai Bedah Pos Anggaran
               </>
             )}
           </button>
@@ -318,40 +530,123 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ currentMonthData, netIncome }) 
       )}
 
       {analysis && !isLoading && (
-        <div className="glass-panel p-5 sm:p-10 rounded-[2rem] border border-white/5 shadow-xl animate-fadeIn">
-          <div className="flex items-center gap-2 mb-6 border-b border-white/5 pb-3">
-            <div className="w-1.5 h-5 bg-emerald-500 rounded-full"></div>
-            <h3 className="text-[10px] sm:text-sm font-black text-white uppercase tracking-widest">Laporan Keuangan Cerdas Aniq</h3>
-          </div>
-          
-          <div className="prose prose-invert max-w-none">
-            <div className="text-slate-300 text-[10px] sm:text-sm leading-relaxed font-bold space-y-4 whitespace-pre-wrap px-1">
-              {analysis.split('\n').map((line, i) => {
-                const trimmed = line.trim();
-                if (trimmed.startsWith('#') || (trimmed.length > 2 && trimmed === trimmed.toUpperCase() && !trimmed.includes(' '))) {
-                  return <h3 key={i} className="font-black text-indigo-400 mt-5 mb-2 uppercase border-l-2 border-indigo-500 pl-2 text-[11px] sm:text-base">{trimmed.replace(/#/g, '').trim()}</h3>;
-                }
-                if (trimmed.startsWith('-') || trimmed.startsWith('*') || /^\d+\./.test(trimmed)) {
-                  return (
-                    <div key={i} className="flex gap-2 items-start ml-1 mb-2">
-                      <CheckCircle2 size={12} className="text-emerald-500 mt-0.5 shrink-0" />
-                      <span className="text-slate-200">{trimmed.replace(/^[-*\d.]/, '').trim()}</span>
-                    </div>
-                  );
-                }
-                if (!trimmed) return <div key={i} className="h-2"></div>;
-                return <p key={i} className="mb-2">{trimmed}</p>;
-              })}
+        <div className="glass-panel p-6 sm:p-10 rounded-[2rem] border border-white/10 shadow-2xl animate-fadeIn space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-2xl">
+                <ShieldCheck size={20} />
+              </div>
+              <div>
+                <h3 className="text-xs sm:text-base font-black text-white uppercase tracking-wider">Laporan Bedah Keuangan Mendalam</h3>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Analisis Komprehensif Berbasis Gemini AI</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button 
+                onClick={handleCopyReport}
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95"
+              >
+                {isCopiedReport ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                {isCopiedReport ? "Tersalin!" : "Salin Laporan"}
+              </button>
             </div>
           </div>
           
-          <div className="mt-8 pt-6 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="flex items-center gap-2 text-[8px] font-black uppercase text-slate-500 tracking-widest">
-              <Wifi size={10} className="text-indigo-500" />
-              Connected to Google Gemini AI
+          <div className="prose prose-invert max-w-none text-slate-200">
+            <Markdown
+              components={{
+                h1: ({ children }) => (
+                  <h1 className="text-sm sm:text-lg font-black text-indigo-300 uppercase tracking-wider mt-8 mb-4 border-b border-indigo-500/30 pb-2.5 flex items-center gap-2 bg-indigo-950/40 p-3 rounded-2xl border-l-4 border-l-indigo-500">
+                    {children}
+                  </h1>
+                ),
+                h2: ({ children }) => (
+                  <h2 className="text-xs sm:text-base font-black text-indigo-400 uppercase tracking-wider mt-6 mb-3 border-l-4 border-indigo-500 pl-3">
+                    {children}
+                  </h2>
+                ),
+                h3: ({ children }) => (
+                  <h3 className="text-xs sm:text-sm font-black text-slate-100 uppercase tracking-wide mt-5 mb-2.5 flex items-center gap-2">
+                    <ArrowUpRight size={14} className="text-indigo-400 shrink-0" />
+                    {children}
+                  </h3>
+                ),
+                p: ({ children }) => (
+                  <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed mb-3">
+                    {children}
+                  </p>
+                ),
+                ul: ({ children }) => (
+                  <ul className="space-y-2.5 my-4 pl-1">
+                    {children}
+                  </ul>
+                ),
+                ol: ({ children }) => (
+                  <ol className="space-y-2.5 my-4 pl-1 list-decimal list-inside text-xs sm:text-sm text-slate-300 font-medium">
+                    {children}
+                  </ol>
+                ),
+                li: ({ children }) => (
+                  <li className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-200 font-medium leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-white/5 shadow-inner">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500 mt-1.5 shrink-0 shadow-sm shadow-indigo-500/50" />
+                    <div className="flex-1">{children}</div>
+                  </li>
+                ),
+                strong: ({ children }) => (
+                  <strong className="font-black text-white bg-indigo-500/15 px-2 py-0.5 rounded-lg text-indigo-200 border border-indigo-500/30">
+                    {children}
+                  </strong>
+                ),
+                table: ({ children }) => (
+                  <div className="overflow-x-auto my-5 rounded-2xl border border-slate-800 shadow-xl">
+                    <table className="w-full text-left text-xs text-slate-300 border-collapse">
+                      {children}
+                    </table>
+                  </div>
+                ),
+                thead: ({ children }) => (
+                  <thead className="bg-slate-900 font-black uppercase text-[10px] text-indigo-300 tracking-wider">
+                    {children}
+                  </thead>
+                ),
+                tbody: ({ children }) => (
+                  <tbody className="divide-y divide-slate-800/60 bg-slate-950/40">
+                    {children}
+                  </tbody>
+                ),
+                tr: ({ children }) => (
+                  <tr className="hover:bg-slate-900/40 transition-colors">
+                    {children}
+                  </tr>
+                ),
+                th: ({ children }) => (
+                  <th className="p-3.5 border-b border-slate-800 font-black uppercase tracking-wider">{children}</th>
+                ),
+                td: ({ children }) => (
+                  <td className="p-3.5 font-bold">{children}</td>
+                ),
+                blockquote: ({ children }) => (
+                  <blockquote className="border-l-4 border-amber-500 bg-amber-500/10 p-4 rounded-r-2xl text-amber-200 text-xs font-bold my-4 leading-relaxed">
+                    {children}
+                  </blockquote>
+                )
+              }}
+            >
+              {analysis}
+            </Markdown>
+          </div>
+          
+          <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2 text-[9px] font-black uppercase text-slate-500 tracking-widest">
+              <Wifi size={12} className="text-emerald-400 animate-pulse" />
+              Connected to Google Gemini AI Engine
             </div>
-            <button onClick={generateAnalysis} className="text-[9px] font-black uppercase tracking-widest text-indigo-400 hover:text-white transition-colors flex items-center gap-2 bg-indigo-500/5 px-4 py-2 rounded-lg">
-              <RefreshCw size={12} /> Analisis Ulang
+            <button 
+              onClick={generateAnalysis} 
+              className="w-full sm:w-auto text-[10px] font-black uppercase tracking-widest text-indigo-300 hover:text-white transition-all flex items-center justify-center gap-2 bg-indigo-600/20 hover:bg-indigo-600/30 px-5 py-2.5 rounded-xl border border-indigo-500/30"
+            >
+              <RefreshCw size={12} /> Analisis Ulang Pos Anggaran
             </button>
           </div>
         </div>
